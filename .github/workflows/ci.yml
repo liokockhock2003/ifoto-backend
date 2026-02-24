@@ -50,7 +50,7 @@ jobs:
           TEST_DB_PASS: ifoto_admin_test
           JWT_SECRET: test-secret-key-32-chars-minimum-length-for-ci-only
           JWT_EXPIRATION_MS: 86400000
-        run: ./mvnw clean install -Dspring-boot.run.profiles=test
+        run: ./mvnw clean install -Dspring.profiles.active=test
 
       - name: Upload test reports on failure
         if: failure()
