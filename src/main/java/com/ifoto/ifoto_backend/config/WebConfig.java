@@ -10,7 +10,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173") // Vite dev
+                .allowedOrigins(
+                        "http://localhost:5173", // local dev
+                        "http://localhost:3000", // Docker Frontend
+                        "https://your-app.vercel.app" // prod frontend
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
