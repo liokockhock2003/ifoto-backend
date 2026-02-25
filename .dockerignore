@@ -25,7 +25,7 @@ Thumbs.db
 # Maven / Gradle caches (no need to send)
 # Keep Maven wrapper files (.mvn/wrapper/) in the build context so the
 # mvnw script can run inside Docker if used. Only ignore local caches.
-# .mvn/
+.mvn/
 .m2/
 .gradle/
 
