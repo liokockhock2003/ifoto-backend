@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# Local environment files (DO NOT commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+target/
+build/
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven / Gradle caches (no need to send)
+.mvn/
+.m2/
+.gradle/
+
+# Logs
+*.log
+logs/
+
+# Node (if any frontend or node tools in repo)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Temporary files
+*.tmp
+*.swp
+*~ 
+
+# Test output
+test-output/
+surefire-reports/
