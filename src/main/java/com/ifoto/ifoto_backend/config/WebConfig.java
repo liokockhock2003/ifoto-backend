@@ -15,6 +15,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:3000", // Docker Frontend
                         "https://your-app.vercel.app" // prod frontend
                 )
+                .allowedOriginPatterns("https://*.vercel.app")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
