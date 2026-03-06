@@ -60,6 +60,10 @@ public class JwtUtil {
         return jwtRefreshExpirationMs;
     }
 
+    public long getExpirationMs() {
+        return jwtExpirationMs;
+    }
+
     public boolean isRefreshToken(String token) {
         try {
             String type = Jwts.parser()
