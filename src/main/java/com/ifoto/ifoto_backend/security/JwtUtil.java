@@ -1,4 +1,3 @@
-// src/main/java/com/ifoto/ifoto_backend/security/JwtUtil.java
 package com.ifoto.ifoto_backend.security;
 
 import io.jsonwebtoken.*;
@@ -21,8 +20,11 @@ public class JwtUtil {
     private String jwtSecret; // put in application.properties:
                               // jwt.secret=your-very-long-random-secret-32-chars+
 
-    @Value("${jwt.expiration-ms:86400000}") // 24 hours default
+    @Value("${jwt.expiration-ms:900000}") // 15 minutes default for access token
     private long jwtExpirationMs;
+
+    @Value("${jwt.refresh-expiration-ms:604800000}") // 7 days default for refresh token
+    private long jwtRefreshExpirationMs;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -37,10 +39,39 @@ public class JwtUtil {
         return Jwts.builder()
                 .subject(username)
                 .claim("roles", roles)
+                .claim("type", "access")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public String generateRefreshToken(Authentication authentication) {
+        return Jwts.builder()
+                .subject(authentication.getName())
+                .claim("type", "refresh")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtRefreshExpirationMs))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public long getRefreshExpirationMs() {
+        return jwtRefreshExpirationMs;
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            String type = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .get("type", String.class);
+            return "refresh".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public String getUsernameFromToken(String token) {
