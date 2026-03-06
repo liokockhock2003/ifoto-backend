@@ -1,17 +1,19 @@
-// src/main/java/com/ifoto/ifoto_backend/service/UserService.java
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.model.Role;
 import com.ifoto.ifoto_backend.model.User;
+import com.ifoto.ifoto_backend.repository.RoleRepository;
 import com.ifoto.ifoto_backend.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
-import java.util.List;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +21,11 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // we'll configure this in security later
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public User register(@Valid User user) {
-        // Check for existing user
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
@@ -31,12 +33,13 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        // Hash password before saving
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
 
-        // Ensure default role if none provided
+        // Assign default role ROLE_GUEST if none provided
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            user.setRoles(List.of("USER"));
+            Role guestRole = roleRepository.findByName("ROLE_GUEST")
+                    .orElseThrow(() -> new IllegalStateException("Default role ROLE_GUEST not found in database"));
+            user.setRoles(Set.of(guestRole));
         }
 
         return userRepository.save(user);
@@ -45,6 +48,19 @@ public class UserService {
     @Transactional(readOnly = true)
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    @Transactional(readOnly = true)
+    public User getByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    @Transactional(readOnly = true)
+    public Set<String> getRoleNamesByUsername(String username) {
+        return getByUsername(username).getRoles().stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
