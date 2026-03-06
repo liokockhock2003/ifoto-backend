@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -64,16 +64,16 @@ public class User {
     @Builder.Default
     private int failedLoginAttempts = 0;
 
-    @Column(name = "last_login_at") 
+    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    @NotNull(message = "Roles cannot be null")
-    @Size(min = 1, message = "User must have at least one role")
-    @Column(name = "roles", columnDefinition = "json", nullable = false)
-    @Convert(converter = StringListConverter.class)
+    // ── Roles (normalized — mapped via user_roles join table) ─────────────────
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
-    private List<String> roles = new ArrayList<>(List.of("USER"));
+    private Set<Role> roles = new HashSet<>();
 
+    // ── Audit fields ──────────────────────────────────────────────────────────
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

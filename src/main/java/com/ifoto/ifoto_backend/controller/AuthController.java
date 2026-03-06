@@ -1,6 +1,8 @@
 // src/main/java/com/ifoto/ifoto_backend/controller/AuthController.java
 package com.ifoto.ifoto_backend.controller;
 
+import com.ifoto.ifoto_backend.dto.LoginRequest;
+import com.ifoto.ifoto_backend.dto.LoginResponse;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.security.CookieUtil;
 import com.ifoto.ifoto_backend.security.JwtUtil;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -56,7 +59,16 @@ public class AuthController {
                     request.username(), refreshToken, jwtUtil.getRefreshExpirationMs());
             cookieUtil.setRefreshTokenCookie(response, refreshToken, jwtUtil.getRefreshExpirationMs());
 
-            return ResponseEntity.ok(new LoginResponse(accessToken));
+            User user = userService.getByUsername(request.username());
+            Set<String> roles = userService.getRoleNamesByUsername(request.username());
+
+            return ResponseEntity.ok(new LoginResponse(
+                    accessToken,
+                    jwtUtil.getExpirationMs(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    roles));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
@@ -77,7 +89,17 @@ public class AuthController {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 username, null, Collections.emptyList());
 
-        return ResponseEntity.ok(new LoginResponse(jwtUtil.generateToken(authentication)));
+        String newAccessToken = jwtUtil.generateToken(authentication);
+        Set<String> roles = userService.getRoleNamesByUsername(username);
+        User user = userService.getByUsername(username);
+
+        return ResponseEntity.ok(new LoginResponse(
+                newAccessToken,
+                jwtUtil.getExpirationMs(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFullName(),
+                roles));
     }
 
     @PostMapping("/auth/logout")
@@ -91,13 +113,5 @@ public class AuthController {
 
         cookieUtil.clearRefreshTokenCookie(response);
         return ResponseEntity.ok("Logged out successfully");
-    }
-
-    // ── DTOs ──────────────────────────────────────────────────────────────────
-
-    record LoginRequest(String username, String password) {
-    }
-
-    record LoginResponse(String token) {
     }
 }
