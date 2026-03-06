@@ -1,4 +1,3 @@
-// src/main/java/com/ifoto/ifoto_backend/security/JwtAuthenticationFilter.java
 package com.ifoto.ifoto_backend.security;
 
 import jakarta.servlet.FilterChain;

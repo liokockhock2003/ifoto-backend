@@ -52,13 +52,16 @@ public class User {
     private String profilePictureUrl;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isLocked = false;
 
     @Min(value = 0, message = "Failed login attempts cannot be negative")
     @Column(name = "failed_login_attempts", nullable = false)
+    @Builder.Default
     private int failedLoginAttempts = 0;
 
     @Column(name = "last_login_at") 
@@ -68,6 +71,7 @@ public class User {
     @Size(min = 1, message = "User must have at least one role")
     @Column(name = "roles", columnDefinition = "json", nullable = false)
     @Convert(converter = StringListConverter.class)
+    @Builder.Default
     private List<String> roles = new ArrayList<>(List.of("USER"));
 
     @Column(name = "created_at", nullable = false, updatable = false)
