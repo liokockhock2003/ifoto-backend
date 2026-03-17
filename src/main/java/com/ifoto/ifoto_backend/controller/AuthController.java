@@ -3,6 +3,8 @@ package com.ifoto.ifoto_backend.controller;
 
 import com.ifoto.ifoto_backend.dto.LoginRequest;
 import com.ifoto.ifoto_backend.dto.LoginResponse;
+import com.ifoto.ifoto_backend.dto.Register;
+import com.ifoto.ifoto_backend.dto.RegisterResponse;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.security.CookieUtil;
 import com.ifoto.ifoto_backend.security.JwtUtil;
@@ -20,8 +22,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.Set;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -35,12 +39,41 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody Register req) {
         try {
+            // Map DTO -> entity. The service will hash the password before saving.
+            User user = User.builder()
+                    .username(req.username())
+                    .email(req.email())
+                    .passwordHash(req.password())
+                    .fullName(req.fullName())
+                    .phoneNumber(req.phoneNumber())
+                    .profilePictureUrl(req.profilePictureUrl())
+                    .build();
+
             User savedUser = userService.register(user);
-            return ResponseEntity.ok("User registered successfully: " + savedUser.getUsername());
+
+            // Build response DTO
+            var roles = userService.getRoleNamesByUsername(savedUser.getUsername());
+            var resp = new RegisterResponse(
+                    savedUser.getId(),
+                    savedUser.getUsername(),
+                    savedUser.getEmail(),
+                    savedUser.getFullName(),
+                    roles,
+                    savedUser.getCreatedAt());
+
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentContextPath()
+                    .path("/api/v1/users/{id}")
+                    .buildAndExpand(savedUser.getId())
+                    .toUri();
+
+            return ResponseEntity.created(location).body(resp);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Registration failed");
         }
     }
 
