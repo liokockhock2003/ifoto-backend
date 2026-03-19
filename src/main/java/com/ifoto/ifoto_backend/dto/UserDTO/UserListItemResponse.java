@@ -1,4 +1,4 @@
-package com.ifoto.ifoto_backend.dto;
+package com.ifoto.ifoto_backend.dto.UserDTO;
 
 import java.util.Set;
 
