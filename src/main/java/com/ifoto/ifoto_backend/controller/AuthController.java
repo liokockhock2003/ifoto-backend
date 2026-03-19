@@ -1,10 +1,10 @@
 // src/main/java/com/ifoto/ifoto_backend/controller/AuthController.java
 package com.ifoto.ifoto_backend.controller;
 
-import com.ifoto.ifoto_backend.dto.LoginRequest;
-import com.ifoto.ifoto_backend.dto.LoginResponse;
-import com.ifoto.ifoto_backend.dto.Register;
-import com.ifoto.ifoto_backend.dto.RegisterResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.LoginRequest;
+import com.ifoto.ifoto_backend.dto.UserDTO.LoginResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.RegisterRequest;
+import com.ifoto.ifoto_backend.dto.UserDTO.RegisterResponse;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.security.CookieUtil;
 import com.ifoto.ifoto_backend.security.JwtUtil;
@@ -39,7 +39,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody Register req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         try {
             // Map DTO -> entity. The service will hash the password before saving.
             User user = User.builder()

@@ -1,6 +1,7 @@
 package com.ifoto.ifoto_backend.service;
 
-import com.ifoto.ifoto_backend.dto.UserListItemResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateResponse;
 import com.ifoto.ifoto_backend.model.Role;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.repository.RoleRepository;
@@ -129,50 +130,41 @@ public class UserService {
     }
 
     @Transactional
-    public User assignRoleToUser(String username, String roleName) {
-        User user = getByUsername(username);
-        String normalizedRoleName = normalizeRoleName(roleName);
-        Role role = findRoleByName(normalizedRoleName);
-
-        boolean hasRole = user.getRoles().stream()
-                .anyMatch(existingRole -> existingRole.getName().equals(role.getName()));
-
-        if (hasRole) {
-            return user;
+    public User updateUser(String username, Set<String> roleNames, Boolean locked) {
+        if (roleNames == null && locked == null) {
+            throw new IllegalArgumentException("At least one update field must be provided");
         }
 
-        user.getRoles().add(role);
+        User user = getByUsername(username);
+
+        if (roleNames != null) {
+            Set<Role> resolvedRoles = roleNames.stream()
+                    .map(this::normalizeRoleName)
+                    .map(this::findRoleByName)
+                    .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+            user.setRoles(resolvedRoles);
+        }
+
+        if (locked != null) {
+            user.setLocked(locked);
+        }
+
         return userRepository.save(user);
     }
 
     @Transactional
-    public User replaceUserRoles(String username, Set<String> roleNames) {
-        if (roleNames == null) {
-            throw new IllegalArgumentException("Role list must not be null");
-        }
-
+    public UserUpdateResponse deleteUserByUsername(String username) {
         User user = getByUsername(username);
 
-        Set<Role> resolvedRoles = roleNames.stream()
-                .map(this::normalizeRoleName)
-                .map(this::findRoleByName)
-                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+        UserUpdateResponse response = new UserUpdateResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()),
+                user.isLocked());
 
-        user.setRoles(resolvedRoles);
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    public User removeRoleFromUser(String username, String roleName) {
-        User user = getByUsername(username);
-        String normalizedRoleName = normalizeRoleName(roleName);
-
-        boolean removed = user.getRoles().removeIf(role -> role.getName().equals(normalizedRoleName));
-        if (!removed) {
-            throw new IllegalArgumentException("User does not have role: " + normalizedRoleName);
-        }
-
-        return userRepository.save(user);
+        userRepository.delete(user);
+        return response;
     }
 
     private Role findRoleByName(String roleName) {
