@@ -1,9 +1,9 @@
 package com.ifoto.ifoto_backend.controller;
 
-import com.ifoto.ifoto_backend.dto.UserListItemResponse;
-import com.ifoto.ifoto_backend.dto.UserRoleRequest;
-import com.ifoto.ifoto_backend.dto.UserRolesRequest;
-import com.ifoto.ifoto_backend.dto.UserRolesResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserRolesResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateRequest;
+import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateResponse;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.service.UserService;
 import jakarta.validation.Valid;
@@ -47,13 +47,13 @@ public class UserController {
         }
     }
 
-    @PostMapping("/{username}/roles")
-    public ResponseEntity<UserRolesResponse> addRoleToUser(
+    @PatchMapping("/{username}")
+    public ResponseEntity<UserUpdateResponse> updateUser(
             @PathVariable String username,
-            @Valid @RequestBody UserRoleRequest request) {
+            @Valid @RequestBody UserUpdateRequest request) {
         try {
-            User updatedUser = userService.assignRoleToUser(username, request.roleName());
-            return ResponseEntity.ok(toRolesResponse(updatedUser));
+            User updatedUser = userService.updateUser(username, request.roles(), request.locked());
+            return ResponseEntity.ok(toUserUpdateResponse(updatedUser));
         } catch (UsernameNotFoundException ex) {
             throw new ResponseStatusException(NOT_FOUND, ex.getMessage());
         } catch (IllegalArgumentException ex) {
@@ -61,31 +61,13 @@ public class UserController {
         }
     }
 
-    @PutMapping("/{username}/roles")
-    public ResponseEntity<UserRolesResponse> replaceUserRoles(
-            @PathVariable String username,
-            @Valid @RequestBody UserRolesRequest request) {
+    @DeleteMapping("/{username}")
+    public ResponseEntity<UserUpdateResponse> deleteUser(@PathVariable String username) {
         try {
-            User updatedUser = userService.replaceUserRoles(username, request.roles());
-            return ResponseEntity.ok(toRolesResponse(updatedUser));
+            UserUpdateResponse deletedUser = userService.deleteUserByUsername(username);
+            return ResponseEntity.ok(deletedUser);
         } catch (UsernameNotFoundException ex) {
             throw new ResponseStatusException(NOT_FOUND, ex.getMessage());
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(BAD_REQUEST, ex.getMessage());
-        }
-    }
-
-    @DeleteMapping("/{username}/roles/{roleName}")
-    public ResponseEntity<UserRolesResponse> removeRoleFromUser(
-            @PathVariable String username,
-            @PathVariable String roleName) {
-        try {
-            User updatedUser = userService.removeRoleFromUser(username, roleName);
-            return ResponseEntity.ok(toRolesResponse(updatedUser));
-        } catch (UsernameNotFoundException ex) {
-            throw new ResponseStatusException(NOT_FOUND, ex.getMessage());
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(BAD_REQUEST, ex.getMessage());
         }
     }
 
@@ -94,5 +76,14 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    private UserUpdateResponse toUserUpdateResponse(User user) {
+        return new UserUpdateResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()),
+                user.isLocked());
     }
 }
