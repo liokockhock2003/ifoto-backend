@@ -8,5 +8,6 @@ public record LoginResponse(
         String username,
         String email,
         String fullName,
+        String activeRole,
         Set<String> roles) {
 }

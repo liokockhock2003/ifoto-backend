@@ -101,6 +101,7 @@ public class AuthController {
                     user.getUsername(),
                     user.getEmail(),
                     user.getFullName(),
+                    user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                     roles));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(401).body("Invalid username or password");
@@ -132,6 +133,7 @@ public class AuthController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
+                user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                 roles));
     }
 

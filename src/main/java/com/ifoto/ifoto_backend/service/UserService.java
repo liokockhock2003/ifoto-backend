@@ -47,6 +47,10 @@ public class UserService {
             Role guestRole = roleRepository.findByName("ROLE_GUEST")
                     .orElseThrow(() -> new IllegalStateException("Default role ROLE_GUEST not found in database"));
             user.setRoles(Set.of(guestRole));
+            user.setActiveRole(guestRole);
+        } else if (user.getActiveRole() == null) {
+            // Default active role to one assigned role for strict role-switching semantics.
+            user.setActiveRole(user.getRoles().iterator().next());
         }
 
         return userRepository.save(user);
@@ -143,12 +147,34 @@ public class UserService {
                     .map(this::findRoleByName)
                     .collect(java.util.stream.Collectors.toCollection(HashSet::new));
             user.setRoles(resolvedRoles);
+
+            if (resolvedRoles.isEmpty()) {
+                user.setActiveRole(null);
+            } else if (user.getActiveRole() == null || !resolvedRoles.contains(user.getActiveRole())) {
+                user.setActiveRole(resolvedRoles.iterator().next());
+            }
         }
 
         if (locked != null) {
             user.setLocked(locked);
         }
 
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User switchActiveRole(String username, String roleName) {
+        User user = getByUsername(username);
+        String normalizedRoleName = normalizeRoleName(roleName);
+
+        boolean userHasRole = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(normalizedRoleName));
+        if (!userHasRole) {
+            throw new IllegalArgumentException("Target role does not belong to user: " + normalizedRoleName);
+        }
+
+        Role targetRole = findRoleByName(normalizedRoleName);
+        user.setActiveRole(targetRole);
         return userRepository.save(user);
     }
 
