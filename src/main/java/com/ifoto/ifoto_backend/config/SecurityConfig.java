@@ -18,7 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.ifoto.ifoto_backend.security.JwtUtil;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/api/v1/register", "/", "/dbtest", "/api/photos/**")
                         .permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*/active-role").authenticated()
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
 
@@ -69,9 +70,9 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         return username -> userService.findByUsername(username)
                 .map(user -> {
-                    var authorities = user.getRoles().stream()
-                            .map(role -> new SimpleGrantedAuthority(role.getName()))
-                            .collect(Collectors.toList());
+                    var authorities = user.getActiveRole() == null
+                            ? List.<SimpleGrantedAuthority>of()
+                            : List.of(new SimpleGrantedAuthority(user.getActiveRole().getName()));
                     return org.springframework.security.core.userdetails.User
                             .withUsername(user.getUsername())
                             .password(user.getPasswordHash())

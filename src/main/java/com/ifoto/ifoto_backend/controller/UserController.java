@@ -1,6 +1,7 @@
 package com.ifoto.ifoto_backend.controller;
 
 import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ActiveRoleSwitchRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserRolesResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateResponse;
@@ -10,11 +11,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
@@ -53,6 +56,25 @@ public class UserController {
             @Valid @RequestBody UserUpdateRequest request) {
         try {
             User updatedUser = userService.updateUser(username, request.roles(), request.locked());
+            return ResponseEntity.ok(toUserUpdateResponse(updatedUser));
+        } catch (UsernameNotFoundException ex) {
+            throw new ResponseStatusException(NOT_FOUND, ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(BAD_REQUEST, ex.getMessage());
+        }
+    }
+
+    @PatchMapping("/{username}/active-role")
+    public ResponseEntity<UserUpdateResponse> switchActiveRole(
+            @PathVariable String username,
+            Authentication authentication,
+            @Valid @RequestBody ActiveRoleSwitchRequest request) {
+        try {
+            if (authentication == null || !username.equals(authentication.getName())) {
+                throw new ResponseStatusException(FORBIDDEN, "You can only switch your own active role");
+            }
+
+            User updatedUser = userService.switchActiveRole(username, request.roleName());
             return ResponseEntity.ok(toUserUpdateResponse(updatedUser));
         } catch (UsernameNotFoundException ex) {
             throw new ResponseStatusException(NOT_FOUND, ex.getMessage());
