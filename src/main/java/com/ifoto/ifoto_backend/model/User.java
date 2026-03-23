@@ -73,6 +73,11 @@ public class User {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
+    // Strict role-switching: authorities are derived from this active role
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_role_id")
+    private Role activeRole;
+
     // ── Audit fields ──────────────────────────────────────────────────────────
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
