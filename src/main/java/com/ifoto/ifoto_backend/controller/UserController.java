@@ -106,6 +106,7 @@ public class UserController {
                 user.getUsername(),
                 user.getFullName(),
                 user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()),
+                user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                 user.isLocked());
     }
 }

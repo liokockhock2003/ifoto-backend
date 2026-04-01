@@ -1,13 +1,16 @@
 // src/main/java/com/ifoto/ifoto_backend/controller/AuthController.java
 package com.ifoto.ifoto_backend.controller;
 
+import com.ifoto.ifoto_backend.dto.UserDTO.ForgotPasswordRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.LoginRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.LoginResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.RegisterRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.RegisterResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ResetPasswordRequest;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.security.CookieUtil;
 import com.ifoto.ifoto_backend.security.JwtUtil;
+import com.ifoto.ifoto_backend.service.PasswordResetTokenService;
 import com.ifoto.ifoto_backend.service.RefreshTokenService;
 import com.ifoto.ifoto_backend.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,6 +40,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordResetTokenService passwordResetTokenService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
@@ -148,5 +152,21 @@ public class AuthController {
 
         cookieUtil.clearRefreshTokenCookie(response);
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/auth/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetTokenService.requestPasswordReset(request.email());
+        return ResponseEntity.ok("If an account with that email exists, a reset link has been sent.");
+    }
+
+    @PostMapping("/auth/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            passwordResetTokenService.resetPassword(request.token(), request.newPassword());
+            return ResponseEntity.ok("Password reset successful");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

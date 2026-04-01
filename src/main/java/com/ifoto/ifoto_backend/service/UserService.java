@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
@@ -49,8 +50,9 @@ public class UserService {
             user.setRoles(Set.of(guestRole));
             user.setActiveRole(guestRole);
         } else if (user.getActiveRole() == null) {
-            // Default active role to one assigned role for strict role-switching semantics.
-            user.setActiveRole(user.getRoles().iterator().next());
+            // Keep role choice deterministic (aligned with migration backfill using
+            // MIN(role_id)).
+            user.setActiveRole(selectDeterministicActiveRole(user.getRoles()));
         }
 
         return userRepository.save(user);
@@ -59,6 +61,11 @@ public class UserService {
     @Transactional(readOnly = true)
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +89,16 @@ public class UserService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Transactional
+    public User updatePassword(User user, String rawPassword) {
+        if (rawPassword == null || rawPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        return userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
@@ -151,7 +168,7 @@ public class UserService {
             if (resolvedRoles.isEmpty()) {
                 user.setActiveRole(null);
             } else if (user.getActiveRole() == null || !resolvedRoles.contains(user.getActiveRole())) {
-                user.setActiveRole(resolvedRoles.iterator().next());
+                user.setActiveRole(selectDeterministicActiveRole(resolvedRoles));
             }
         }
 
@@ -167,13 +184,12 @@ public class UserService {
         User user = getByUsername(username);
         String normalizedRoleName = normalizeRoleName(roleName);
 
-        boolean userHasRole = user.getRoles().stream()
-                .anyMatch(role -> role.getName().equals(normalizedRoleName));
-        if (!userHasRole) {
-            throw new IllegalArgumentException("Target role does not belong to user: " + normalizedRoleName);
-        }
+        Role targetRole = user.getRoles().stream()
+                .filter(role -> role.getName().equals(normalizedRoleName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Target role does not belong to user: " + normalizedRoleName));
 
-        Role targetRole = findRoleByName(normalizedRoleName);
         user.setActiveRole(targetRole);
         return userRepository.save(user);
     }
@@ -187,6 +203,7 @@ public class UserService {
                 user.getUsername(),
                 user.getFullName(),
                 user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()),
+            user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                 user.isLocked());
 
         userRepository.delete(user);
@@ -209,5 +226,13 @@ public class UserService {
         }
 
         return normalized;
+    }
+
+    private Role selectDeterministicActiveRole(Set<Role> roles) {
+        return roles.stream()
+                .min(Comparator
+                        .comparing(Role::getId, Comparator.nullsLast(Long::compareTo))
+                        .thenComparing(Role::getName, Comparator.nullsLast(String::compareTo)))
+                .orElseThrow(() -> new IllegalArgumentException("At least one role is required to select active role"));
     }
 }
