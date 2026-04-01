@@ -41,7 +41,7 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        user.setPasswordHash(passwordEncoder.encode(validateRawPassword(user.getPasswordHash())));
 
         // Assign default role ROLE_GUEST if none provided
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
@@ -93,12 +93,16 @@ public class UserService {
 
     @Transactional
     public User updatePassword(User user, String rawPassword) {
+        user.setPasswordHash(passwordEncoder.encode(validateRawPassword(rawPassword)));
+        return userRepository.save(user);
+    }
+
+    private String validateRawPassword(String rawPassword) {
         if (rawPassword == null || rawPassword.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters");
         }
 
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
-        return userRepository.save(user);
+        return rawPassword;
     }
 
     @Transactional(readOnly = true)
@@ -203,7 +207,7 @@ public class UserService {
                 user.getUsername(),
                 user.getFullName(),
                 user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()),
-            user.getActiveRole() != null ? user.getActiveRole().getName() : null,
+                user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                 user.isLocked());
 
         userRepository.delete(user);
