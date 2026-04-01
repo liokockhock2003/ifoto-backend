@@ -7,6 +7,7 @@ import com.ifoto.ifoto_backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -50,8 +51,11 @@ public class PasswordResetTokenService {
             passwordResetTokenRepository.save(passwordResetToken);
             try {
                 mailService.sendPasswordResetEmail(user.getEmail(), buildResetLink(token));
-            } catch (Exception ex) {
-                log.warn("Failed to send password reset email for userId={}", user.getId(), ex);
+            } catch (MailException ex) {
+                // Keep forgot-password responses uniform while preserving operational
+                // visibility.
+                log.error("Password reset email delivery failed for userId={} email={}", user.getId(), user.getEmail(),
+                        ex);
             }
         });
     }
@@ -88,6 +92,7 @@ public class PasswordResetTokenService {
                 .fromUriString(resetUrlBase)
                 .queryParam("token", token)
                 .build()
+                .encode()
                 .toUriString();
     }
 }
