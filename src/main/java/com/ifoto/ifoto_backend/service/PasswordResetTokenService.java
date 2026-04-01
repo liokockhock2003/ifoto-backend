@@ -4,17 +4,18 @@ import com.ifoto.ifoto_backend.model.PasswordResetToken;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.repository.PasswordResetTokenRepository;
 import com.ifoto.ifoto_backend.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class PasswordResetTokenService {
 
@@ -47,7 +48,11 @@ public class PasswordResetTokenService {
                     .build();
 
             passwordResetTokenRepository.save(passwordResetToken);
-            mailService.sendPasswordResetEmail(user.getEmail(), buildResetLink(token));
+            try {
+                mailService.sendPasswordResetEmail(user.getEmail(), buildResetLink(token));
+            } catch (Exception ex) {
+                log.warn("Failed to send password reset email for userId={}", user.getId(), ex);
+            }
         });
     }
 
@@ -55,9 +60,6 @@ public class PasswordResetTokenService {
     public void resetPassword(String token, String newPassword) {
         if (token == null || token.isBlank()) {
             throw new IllegalArgumentException("Reset token is required");
-        }
-        if (newPassword == null || newPassword.length() < 8) {
-            throw new IllegalArgumentException("New password must be at least 8 characters");
         }
 
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token)
@@ -82,7 +84,10 @@ public class PasswordResetTokenService {
     }
 
     private String buildResetLink(String token) {
-        String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-        return resetUrlBase + "?token=" + encodedToken;
+        return UriComponentsBuilder
+                .fromUriString(resetUrlBase)
+                .queryParam("token", token)
+                .build()
+                .toUriString();
     }
 }
