@@ -30,7 +30,6 @@ CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
 -- ── seed default roles ────────────────────────────────────────────────────────
 INSERT INTO roles (name) VALUES
     ('ROLE_ADMIN'),
-    ('ROLE_CLUB_MEMBER'),
     ('ROLE_GUEST'),
     ('ROLE_EVENT_COMMITTEE'),
     ('ROLE_HIGH_COMMITTEE'),

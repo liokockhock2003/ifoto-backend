@@ -7,6 +7,5 @@ public record UserUpdateResponse(
         String username,
         String fullName,
         Set<String> roles,
-        String activeRole,
         boolean locked) {
 }

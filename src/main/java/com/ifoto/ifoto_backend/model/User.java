@@ -47,8 +47,7 @@ public class User {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Size(max = 512, message = "Profile picture URL cannot exceed 512 characters")
-    @Column(name = "profile_picture_url", length = 512)
+    @Column(name = "profile_picture", columnDefinition = "MEDIUMTEXT")
     private String profilePictureUrl;
 
     @Column(nullable = false)
@@ -72,11 +71,6 @@ public class User {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
-
-    // Strict role-switching: authorities are derived from this active role
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "active_role_id")
-    private Role activeRole;
 
     // ── Audit fields ──────────────────────────────────────────────────────────
     @Column(name = "created_at", nullable = false, updatable = false)
