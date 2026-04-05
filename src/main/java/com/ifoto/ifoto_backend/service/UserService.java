@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
@@ -48,11 +47,6 @@ public class UserService {
             Role guestRole = roleRepository.findByName("ROLE_GUEST")
                     .orElseThrow(() -> new IllegalStateException("Default role ROLE_GUEST not found in database"));
             user.setRoles(Set.of(guestRole));
-            user.setActiveRole(guestRole);
-        } else if (user.getActiveRole() == null) {
-            // Keep role choice deterministic (aligned with migration backfill using
-            // MIN(role_id)).
-            user.setActiveRole(selectDeterministicActiveRole(user.getRoles()));
         }
 
         return userRepository.save(user);
@@ -167,34 +161,14 @@ public class UserService {
                     .map(this::normalizeRoleName)
                     .map(this::findRoleByName)
                     .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+            resolvedRoles = applyRoleConstraints(resolvedRoles);
             user.setRoles(resolvedRoles);
-
-            if (resolvedRoles.isEmpty()) {
-                user.setActiveRole(null);
-            } else if (user.getActiveRole() == null || !resolvedRoles.contains(user.getActiveRole())) {
-                user.setActiveRole(selectDeterministicActiveRole(resolvedRoles));
-            }
         }
 
         if (locked != null) {
             user.setLocked(locked);
         }
 
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    public User switchActiveRole(String username, String roleName) {
-        User user = getByUsername(username);
-        String normalizedRoleName = normalizeRoleName(roleName);
-
-        Role targetRole = user.getRoles().stream()
-                .filter(role -> role.getName().equals(normalizedRoleName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Target role does not belong to user: " + normalizedRoleName));
-
-        user.setActiveRole(targetRole);
         return userRepository.save(user);
     }
 
@@ -207,7 +181,6 @@ public class UserService {
                 user.getUsername(),
                 user.getFullName(),
                 user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()),
-                user.getActiveRole() != null ? user.getActiveRole().getName() : null,
                 user.isLocked());
 
         userRepository.delete(user);
@@ -232,11 +205,39 @@ public class UserService {
         return normalized;
     }
 
-    private Role selectDeterministicActiveRole(Set<Role> roles) {
-        return roles.stream()
-                .min(Comparator
-                        .comparing(Role::getId, Comparator.nullsLast(Long::compareTo))
-                        .thenComparing(Role::getName, Comparator.nullsLast(String::compareTo)))
-                .orElseThrow(() -> new IllegalArgumentException("At least one role is required to select active role"));
+    private Set<Role> applyRoleConstraints(Set<Role> resolvedRoles) {
+        Set<String> names = resolvedRoles.stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Rule 1: ADMIN, HIGH_COMMITTEE, EQUIPMENT_COMMITTEE always imply CLUB_MEMBER
+        boolean needsClubMember = names.contains("ROLE_ADMIN")
+                || names.contains("ROLE_HIGH_COMMITTEE")
+                || names.contains("ROLE_EQUIPMENT_COMMITTEE");
+
+        if (needsClubMember && !names.contains("ROLE_CLUB_MEMBER")) {
+            Role clubMember = roleRepository.findByName("ROLE_CLUB_MEMBER")
+                    .orElseThrow(() -> new IllegalStateException("Role Club Member not found in database"));
+            resolvedRoles = new HashSet<>(resolvedRoles);
+            resolvedRoles.add(clubMember);
+            names = resolvedRoles.stream().map(Role::getName).collect(java.util.stream.Collectors.toSet());
+        }
+
+        // Rule 2: CLUB_MEMBER and GUEST are mutually exclusive
+        if (names.contains("ROLE_CLUB_MEMBER") && names.contains("ROLE_GUEST")) {
+            throw new IllegalArgumentException(
+                    "Role Club Member and Role Guest cannot be assigned to the same user");
+        }
+
+        // Rule 3: EVENT_COMMITTEE must declare a base membership type
+        if (names.contains("ROLE_EVENT_COMMITTEE")) {
+            if (!names.contains("ROLE_CLUB_MEMBER") && !names.contains("ROLE_GUEST")) {
+                throw new IllegalArgumentException(
+                        "Role Event Committee requires either Role Club Member or Role Guest to also be present");
+            }
+        }
+
+        return resolvedRoles;
     }
+
 }

@@ -10,9 +10,9 @@ CREATE TABLE users (
     password_hash   VARCHAR(255)    NOT NULL,       -- bcrypt hash only!
 
     -- Basic profile
-    full_name           VARCHAR(100),
-    phone_number        VARCHAR(20),
-    profile_picture_url VARCHAR(512),
+    full_name       VARCHAR(100),
+    phone_number    VARCHAR(20),
+    profile_picture MEDIUMTEXT,
 
     -- Status & security
     is_active               BOOLEAN     DEFAULT TRUE,
@@ -28,6 +28,6 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes
-CREATE INDEX idx_users_email    ON users(email);
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_active   ON users(is_active);
+CREATE INDEX idx_users_email       ON users(email);
+CREATE INDEX idx_users_username    ON users(username);
+CREATE INDEX idx_users_active      ON users(is_active);
