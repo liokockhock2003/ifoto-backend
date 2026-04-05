@@ -9,7 +9,7 @@ INSERT INTO users (
     password_hash,
     full_name,
     phone_number,
-    profile_picture_url,
+    profile_picture,
     is_active,
     is_locked,
     failed_login_attempts,
@@ -24,7 +24,6 @@ INSERT INTO users (
     '+601234567890',
     NULL, TRUE, FALSE, 0, NULL
 ),
--- ROLE_CLUB_MEMBER
 (
     'johndoe',
     'john@ifoto.com',
@@ -85,23 +84,23 @@ INSERT INTO users (
 );
 
 -- ── assign roles via user_roles ───────────────────────────────────────────────
--- admin → ROLE_ADMIN + ROLE_CLUB_MEMBER
+-- admin → ROLE_ADMIN
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'admin'
-AND r.name IN ('ROLE_ADMIN', 'ROLE_CLUB_MEMBER');
+AND r.name = 'ROLE_ADMIN';
 
--- johndoe → ROLE_CLUB_MEMBER
+-- johndoe → ROLE_GUEST
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'johndoe'
-AND r.name = 'ROLE_CLUB_MEMBER';
+AND r.name = 'ROLE_GUEST';
 
--- janedoe → ROLE_CLUB_MEMBER
+-- janedoe → ROLE_GUEST
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'janedoe'
-AND r.name = 'ROLE_CLUB_MEMBER';
+AND r.name = 'ROLE_GUEST';
 
 -- lockeduser → ROLE_GUEST (locked account test)
 INSERT INTO user_roles (user_id, role_id)
@@ -115,20 +114,20 @@ SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'guestuser'
 AND r.name = 'ROLE_GUEST';
 
--- eventcommittee → ROLE_EVENT_COMMITTEE + ROLE_CLUB_MEMBER
+-- eventcommittee → ROLE_EVENT_COMMITTEE
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'eventcommittee'
-AND r.name IN ('ROLE_EVENT_COMMITTEE', 'ROLE_CLUB_MEMBER');
+AND r.name = 'ROLE_EVENT_COMMITTEE';
 
--- highcommittee → ROLE_HIGH_COMMITTEE + ROLE_CLUB_MEMBER
+-- highcommittee → ROLE_HIGH_COMMITTEE
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'highcommittee'
-AND r.name IN ('ROLE_HIGH_COMMITTEE', 'ROLE_CLUB_MEMBER');
+AND r.name = 'ROLE_HIGH_COMMITTEE';
 
--- equipmentcommittee → ROLE_EQUIPMENT_COMMITTEE + ROLE_CLUB_MEMBER
+-- equipmentcommittee → ROLE_EQUIPMENT_COMMITTEE
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'equipmentcommittee'
-AND r.name IN ('ROLE_EQUIPMENT_COMMITTEE', 'ROLE_CLUB_MEMBER');
+AND r.name = 'ROLE_EQUIPMENT_COMMITTEE';

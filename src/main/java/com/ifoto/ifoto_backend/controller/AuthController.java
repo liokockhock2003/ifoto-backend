@@ -21,7 +21,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -43,77 +42,65 @@ public class AuthController {
     private final PasswordResetTokenService passwordResetTokenService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-        try {
-            // Map DTO -> entity. The service will hash the password before saving.
-            User user = User.builder()
-                    .username(req.username())
-                    .email(req.email())
-                    .passwordHash(req.password())
-                    .fullName(req.fullName())
-                    .phoneNumber(req.phoneNumber())
-                    .profilePictureUrl(req.profilePictureUrl())
-                    .build();
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest req) {
+        User user = User.builder()
+                .username(req.username())
+                .email(req.email())
+                .passwordHash(req.password())
+                .fullName(req.fullName())
+                .phoneNumber(req.phoneNumber())
+                .profilePictureUrl(req.profilePicture())
+                .build();
 
-            User savedUser = userService.register(user);
+        User savedUser = userService.register(user);
 
-            // Build response DTO
-            var roles = userService.getRoleNamesByUsername(savedUser.getUsername());
-            var resp = new RegisterResponse(
-                    savedUser.getId(),
-                    savedUser.getUsername(),
-                    savedUser.getEmail(),
-                    savedUser.getFullName(),
-                    roles,
-                    savedUser.getCreatedAt());
+        var roles = userService.getRoleNamesByUsername(savedUser.getUsername());
+        var resp = new RegisterResponse(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                savedUser.getFullName(),
+                roles,
+                savedUser.getCreatedAt());
 
-            URI location = ServletUriComponentsBuilder
-                    .fromCurrentContextPath()
-                    .path("/api/v1/users/{id}")
-                    .buildAndExpand(savedUser.getId())
-                    .toUri();
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .path("/api/v1/users/{id}")
+                .buildAndExpand(savedUser.getId())
+                .toUri();
 
-            return ResponseEntity.created(location).body(resp);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Registration failed");
-        }
+        return ResponseEntity.created(location).body(resp);
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request,
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,
             HttpServletResponse response) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.username(),
-                            request.password()));
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.username(),
+                        request.password()));
 
-            String accessToken = jwtUtil.generateToken(authentication);
-            String refreshToken = jwtUtil.generateRefreshToken(authentication);
-            refreshTokenService.saveRefreshToken(
-                    request.username(), refreshToken, jwtUtil.getRefreshExpirationMs());
-            cookieUtil.setRefreshTokenCookie(response, refreshToken, jwtUtil.getRefreshExpirationMs());
+        String accessToken = jwtUtil.generateToken(authentication);
+        String refreshToken = jwtUtil.generateRefreshToken(authentication);
+        refreshTokenService.saveRefreshToken(
+                request.username(), refreshToken, jwtUtil.getRefreshExpirationMs());
+        cookieUtil.setRefreshTokenCookie(response, refreshToken, jwtUtil.getRefreshExpirationMs());
 
-            User user = userService.getByUsername(request.username());
-            Set<String> roles = userService.getRoleNamesByUsername(request.username());
+        User user = userService.getByUsername(request.username());
+        Set<String> roles = userService.getRoleNamesByUsername(request.username());
 
-            return ResponseEntity.ok(new LoginResponse(
-                    accessToken,
-                    jwtUtil.getExpirationMs(),
-                    user.getUsername(),
-                    user.getEmail(),
-                    user.getFullName(),
-                    user.getActiveRole() != null ? user.getActiveRole().getName() : null,
-                    roles));
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
-        }
+        return ResponseEntity.ok(new LoginResponse(
+                accessToken,
+                jwtUtil.getExpirationMs(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFullName(),
+                roles,
+                user.getProfilePictureUrl()));
     }
 
     @PostMapping("/auth/refresh")
-    public ResponseEntity<?> refresh(
+    public ResponseEntity<LoginResponse> refresh(
             @CookieValue(name = "refreshToken", required = false) String refreshToken) {
 
         if (refreshToken == null
@@ -137,12 +124,12 @@ public class AuthController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getActiveRole() != null ? user.getActiveRole().getName() : null,
-                roles));
+                roles,
+                user.getProfilePictureUrl()));
     }
 
     @PostMapping("/auth/logout")
-    public ResponseEntity<?> logout(
+    public ResponseEntity<String> logout(
             @CookieValue(name = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response) {
 
@@ -155,18 +142,14 @@ public class AuthController {
     }
 
     @PostMapping("/auth/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetTokenService.requestPasswordReset(request.email());
         return ResponseEntity.ok("If an account with that email exists, a reset link has been sent.");
     }
 
     @PostMapping("/auth/reset-password")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        try {
-            passwordResetTokenService.resetPassword(request.token(), request.newPassword());
-            return ResponseEntity.ok("Password reset successful");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetTokenService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok("Password reset successful");
     }
 }
