@@ -229,7 +229,13 @@ public class UserService {
                     "Role Club Member and Role Guest cannot be assigned to the same user");
         }
 
-        // Rule 3: EVENT_COMMITTEE must declare a base membership type
+        // Rule 3: ADMIN and HIGH_COMMITTEE are mutually exclusive
+        if (names.contains("ROLE_ADMIN") && names.contains("ROLE_HIGH_COMMITTEE")) {
+            throw new IllegalArgumentException(
+                    "Role Admin and Role High Committee cannot be assigned to the same user");
+        }
+
+        // Rule 5: EVENT_COMMITTEE must declare a base membership type
         if (names.contains("ROLE_EVENT_COMMITTEE")) {
             if (!names.contains("ROLE_CLUB_MEMBER") && !names.contains("ROLE_GUEST")) {
                 throw new IllegalArgumentException(
