@@ -30,6 +30,14 @@ public class EventService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<EventResponse> getEventsByCommitteeMember(Long userId) {
+        userService.getUserById(userId); // validates user exists
+        return eventRepository.findByCommitteeMemberId(userId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public EventResponse createEvent(EventRequest request) {
         Event event = Event.builder()
@@ -77,7 +85,6 @@ public class EventService {
             List<Long> addedIds = newIds.stream().filter(uid -> !oldIds.contains(uid)).toList();
 
             event.setEventCommittee(resolveUsers(request.committeeUserIds()));
-            eventRepository.save(event);
 
             addedIds.forEach(uid -> userService.addRoleToUser(uid, ROLE_EVENT_COMMITTEE));
 

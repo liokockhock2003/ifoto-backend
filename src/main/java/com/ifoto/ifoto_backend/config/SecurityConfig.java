@@ -48,6 +48,7 @@ public class SecurityConfig {
                                 "/")
                         .permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/committee/**").hasAnyRole("HIGH_COMMITTEE", "EVENT_COMMITTEE")
                         .requestMatchers("/api/v1/events/**").hasRole("HIGH_COMMITTEE")
                         .anyRequest().authenticated())
 

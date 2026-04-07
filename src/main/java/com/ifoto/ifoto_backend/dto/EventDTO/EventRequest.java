@@ -1,11 +1,13 @@
 package com.ifoto.ifoto_backend.dto.EventDTO;
 
+import com.ifoto.ifoto_backend.validation.EventDateRangeValid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@EventDateRangeValid
 public record EventRequest(
         @NotBlank(message = "Event name is required")
         String eventName,
