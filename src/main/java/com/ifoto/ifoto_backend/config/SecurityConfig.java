@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/equipment/**").hasRole("HIGH_COMMITTEE")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/equipment/**").hasRole("HIGH_COMMITTEE")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/equipment/**").hasRole("HIGH_COMMITTEE")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/committee/**").hasAnyRole("HIGH_COMMITTEE", "EVENT_COMMITTEE")
+                        .requestMatchers("/api/v1/events/**").hasRole("HIGH_COMMITTEE")
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
