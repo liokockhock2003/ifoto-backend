@@ -1,9 +1,11 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
+import com.ifoto.ifoto_backend.validation.SubEquipmentQuantityValid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+@SubEquipmentQuantityValid
 public record SubEquipmentRequest(
         @NotBlank(message = "Equipment type is required")
         @Size(max = 100)

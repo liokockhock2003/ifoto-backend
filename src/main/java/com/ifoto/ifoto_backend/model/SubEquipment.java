@@ -47,4 +47,17 @@ public class SubEquipment {
     @OneToMany(mappedBy = "subEquipment", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<EquipmentBookSlots> bookSlots = new ArrayList<>();
+
+    @PrePersist
+    @PreUpdate
+    private void validateQuantities() {
+        if (usedQuantity > totalQuantity) {
+            throw new IllegalStateException(
+                    "usedQuantity (" + usedQuantity + ") cannot exceed totalQuantity (" + totalQuantity + ")");
+        }
+        if (usedQuantity + availableQuantity != totalQuantity) {
+            throw new IllegalStateException(
+                    "usedQuantity + availableQuantity must equal totalQuantity");
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
-public class EquipmentBookSlotsRepository {
-    
+import com.ifoto.ifoto_backend.model.EquipmentBookSlots;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface EquipmentBookSlotsRepository extends JpaRepository<EquipmentBookSlots, Long> {
 }

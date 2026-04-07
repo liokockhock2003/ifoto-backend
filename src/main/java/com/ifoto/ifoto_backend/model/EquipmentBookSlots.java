@@ -35,4 +35,15 @@ public class EquipmentBookSlots {
 
     @Column(name = "quantity_used", nullable = false)
     private int quantityUsed;
+
+    @PrePersist
+    @PreUpdate
+    private void validateEquipmentXor() {
+        boolean hasMain = mainEquipment != null;
+        boolean hasSub = subEquipment != null;
+        if (hasMain == hasSub) {
+            throw new IllegalStateException(
+                    "A booking slot must be linked to exactly one equipment: either main or sub, not both or neither.");
+        }
+    }
 }
