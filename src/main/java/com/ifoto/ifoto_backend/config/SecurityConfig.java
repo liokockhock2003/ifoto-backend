@@ -48,6 +48,7 @@ public class SecurityConfig {
                                 "/")
                         .permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/events/**").hasRole("HIGH_COMMITTEE")
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
