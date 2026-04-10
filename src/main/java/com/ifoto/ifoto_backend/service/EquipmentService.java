@@ -65,11 +65,11 @@ public class EquipmentService {
 
     @Transactional
     public void deleteMainEquipment(Long id) {
-        if (!mainEquipmentRepository.existsById(id)) {
+        int deleted = mainEquipmentRepository.deleteByIdReturningCount(id);
+        if (deleted == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Main equipment not found with id: " + id);
         }
-        mainEquipmentRepository.deleteById(id);
     }
 
     // ── Sub Equipment ─────────────────────────────────────────────────────────
@@ -108,11 +108,11 @@ public class EquipmentService {
 
     @Transactional
     public void deleteSubEquipment(Long id) {
-        if (!subEquipmentRepository.existsById(id)) {
+        int deleted = subEquipmentRepository.deleteByIdReturningCount(id);
+        if (deleted == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Sub equipment not found with id: " + id);
         }
-        subEquipmentRepository.deleteById(id);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
