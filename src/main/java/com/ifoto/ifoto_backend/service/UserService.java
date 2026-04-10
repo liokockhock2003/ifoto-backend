@@ -172,6 +172,32 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+    }
+
+    @Transactional
+    public void addRoleToUser(Long userId, String roleName) {
+        User user = getUserById(userId);
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new IllegalStateException("Role not found: " + roleName));
+        if (user.getRoles().stream().noneMatch(r -> r.getName().equals(roleName))) {
+            user.getRoles().add(role);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional
+    public void removeRoleFromUser(Long userId, String roleName) {
+        User user = getUserById(userId);
+        boolean removed = user.getRoles().removeIf(r -> r.getName().equals(roleName));
+        if (removed) {
+            userRepository.save(user);
+        }
+    }
+
     @Transactional
     public UserUpdateResponse deleteUserByUsername(String username) {
         User user = getByUsername(username);
