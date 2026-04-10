@@ -34,7 +34,7 @@ public class EquipmentService {
     // ── Main Equipment ────────────────────────────────────────────────────────
 
     @Transactional
-    public EquipmentListResponse addMainEquipment(MainEquipmentRequest req) {
+    public MainEquipmentResponse addMainEquipment(MainEquipmentRequest req) {
         MainEquipment entity = MainEquipment.builder()
                 .equipmentType(req.equipmentType())
                 .brand(req.brand())
@@ -44,12 +44,12 @@ public class EquipmentService {
                 .status(req.status())
                 .notes(req.notes())
                 .build();
-        mainEquipmentRepository.save(entity);
-        return buildEquipmentListResponse();
+        MainEquipment saved = mainEquipmentRepository.save(entity);
+        return toMainResponse(saved);
     }
 
     @Transactional
-    public EquipmentListResponse updateMainEquipment(Long id, MainEquipmentRequest req) {
+    public MainEquipmentResponse updateMainEquipment(Long id, MainEquipmentRequest req) {
         MainEquipment entity = mainEquipmentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Main equipment not found with id: " + id));
@@ -60,24 +60,22 @@ public class EquipmentService {
         entity.setCondition(req.condition());
         entity.setStatus(req.status());
         entity.setNotes(req.notes());
-        mainEquipmentRepository.save(entity);
-        return buildEquipmentListResponse();
+        return toMainResponse(mainEquipmentRepository.save(entity));
     }
 
     @Transactional
-    public EquipmentListResponse deleteMainEquipment(Long id) {
+    public void deleteMainEquipment(Long id) {
         if (!mainEquipmentRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Main equipment not found with id: " + id);
         }
         mainEquipmentRepository.deleteById(id);
-        return buildEquipmentListResponse();
     }
 
     // ── Sub Equipment ─────────────────────────────────────────────────────────
 
     @Transactional
-    public EquipmentListResponse addSubEquipment(SubEquipmentRequest req) {
+    public SubEquipmentResponse addSubEquipment(SubEquipmentRequest req) {
         SubEquipment entity = SubEquipment.builder()
                 .equipmentType(req.equipmentType())
                 .brand(req.brand())
@@ -88,12 +86,12 @@ public class EquipmentService {
                 .availableQuantity(req.availableQuantity())
                 .notes(req.notes())
                 .build();
-        subEquipmentRepository.save(entity);
-        return buildEquipmentListResponse();
+        SubEquipment saved = subEquipmentRepository.save(entity);
+        return toSubResponse(saved);
     }
 
     @Transactional
-    public EquipmentListResponse updateSubEquipment(Long id, SubEquipmentRequest req) {
+    public SubEquipmentResponse updateSubEquipment(Long id, SubEquipmentRequest req) {
         SubEquipment entity = subEquipmentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Sub equipment not found with id: " + id));
@@ -105,50 +103,56 @@ public class EquipmentService {
         entity.setUsedQuantity(req.usedQuantity());
         entity.setAvailableQuantity(req.availableQuantity());
         entity.setNotes(req.notes());
-        subEquipmentRepository.save(entity);
-        return buildEquipmentListResponse();
+        return toSubResponse(subEquipmentRepository.save(entity));
     }
 
     @Transactional
-    public EquipmentListResponse deleteSubEquipment(Long id) {
+    public void deleteSubEquipment(Long id) {
         if (!subEquipmentRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Sub equipment not found with id: " + id);
         }
         subEquipmentRepository.deleteById(id);
-        return buildEquipmentListResponse();
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private EquipmentListResponse buildEquipmentListResponse() {
         List<MainEquipmentResponse> mainList = mainEquipmentRepository.findAll().stream()
-                .map(e -> new MainEquipmentResponse(
-                        e.getMainEquipmentId(),
-                        e.getEquipmentType(),
-                        e.getBrand(),
-                        e.getModel(),
-                        e.getSerialNumber(),
-                        e.getCondition(),
-                        e.getStatus(),
-                        e.getNotes()
-                ))
+                .map(this::toMainResponse)
                 .toList();
 
         List<SubEquipmentResponse> subList = subEquipmentRepository.findAll().stream()
-                .map(e -> new SubEquipmentResponse(
-                        e.getSubEquipmentId(),
-                        e.getEquipmentType(),
-                        e.getBrand(),
-                        e.getModel(),
-                        e.getCapacity(),
-                        e.getTotalQuantity(),
-                        e.getUsedQuantity(),
-                        e.getAvailableQuantity(),
-                        e.getNotes()
-                ))
+                .map(this::toSubResponse)
                 .toList();
 
         return new EquipmentListResponse(mainList, subList);
+    }
+
+    private MainEquipmentResponse toMainResponse(MainEquipment e) {
+        return new MainEquipmentResponse(
+                e.getMainEquipmentId(),
+                e.getEquipmentType(),
+                e.getBrand(),
+                e.getModel(),
+                e.getSerialNumber(),
+                e.getCondition(),
+                e.getStatus(),
+                e.getNotes()
+        );
+    }
+
+    private SubEquipmentResponse toSubResponse(SubEquipment e) {
+        return new SubEquipmentResponse(
+                e.getSubEquipmentId(),
+                e.getEquipmentType(),
+                e.getBrand(),
+                e.getModel(),
+                e.getCapacity(),
+                e.getTotalQuantity(),
+                e.getUsedQuantity(),
+                e.getAvailableQuantity(),
+                e.getNotes()
+        );
     }
 }
