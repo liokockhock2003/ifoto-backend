@@ -1,4 +1,3 @@
-// src/main/java/com/ifoto/ifoto_backend/config/SecurityConfig.java
 package com.ifoto.ifoto_backend.config;
 
 import com.ifoto.ifoto_backend.security.JwtAuthenticationFilter;
@@ -45,7 +44,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/api/v1/register",
-                                "/")
+                                "/",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**")
                         .permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/equipment/**").hasRole("EQUIPMENT_COMMITTEE")
