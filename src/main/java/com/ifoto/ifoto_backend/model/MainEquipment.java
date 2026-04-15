@@ -41,6 +41,9 @@ public class MainEquipment {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "lens_type", length = 50)
+    private String lensType;
+
     @OneToMany(mappedBy = "mainEquipment", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<EquipmentBookSlots> bookSlots = new ArrayList<>();

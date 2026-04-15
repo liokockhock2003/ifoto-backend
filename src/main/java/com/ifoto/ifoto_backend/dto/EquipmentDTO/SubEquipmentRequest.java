@@ -5,17 +5,21 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 @SubEquipmentQuantityValid
 public record SubEquipmentRequest(
+        @Size(max = 100)
+        String type,
+
         @NotBlank(message = "Equipment type is required")
         @Size(max = 100)
         String equipmentType,
 
-        @Size(max = 100)
-        String brand,
+        List<String> cameraModel,
 
         @Size(max = 100)
-        String model,
+        String brand,
 
         @Min(value = 0, message = "Capacity cannot be negative")
         int capacity,
