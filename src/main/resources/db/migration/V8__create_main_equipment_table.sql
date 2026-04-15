@@ -7,6 +7,7 @@ CREATE TABLE main_equipment (
     main_equipment_id   BIGINT          AUTO_INCREMENT PRIMARY KEY,
     equipment_type      VARCHAR(100)    NOT NULL,
     brand               VARCHAR(100),
+    lens_type           VARCHAR(50),
     model               VARCHAR(100),
     serial_number       VARCHAR(100)    UNIQUE,
     `condition`         VARCHAR(50),

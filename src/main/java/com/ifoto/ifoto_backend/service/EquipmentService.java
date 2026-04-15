@@ -37,6 +37,7 @@ public class EquipmentService {
     public MainEquipmentResponse addMainEquipment(MainEquipmentRequest req) {
         MainEquipment entity = MainEquipment.builder()
                 .equipmentType(req.equipmentType())
+                .lensType(req.lensType())
                 .brand(req.brand())
                 .model(req.model())
                 .serialNumber(req.serialNumber())
@@ -54,6 +55,7 @@ public class EquipmentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Main equipment not found with id: " + id));
         entity.setEquipmentType(req.equipmentType());
+        entity.setLensType(req.lensType());
         entity.setBrand(req.brand());
         entity.setModel(req.model());
         entity.setSerialNumber(req.serialNumber());
@@ -77,9 +79,10 @@ public class EquipmentService {
     @Transactional
     public SubEquipmentResponse addSubEquipment(SubEquipmentRequest req) {
         SubEquipment entity = SubEquipment.builder()
+                .type(req.type())
                 .equipmentType(req.equipmentType())
+                .cameraModel(req.cameraModel())
                 .brand(req.brand())
-                .model(req.model())
                 .capacity(req.capacity())
                 .totalQuantity(req.totalQuantity())
                 .usedQuantity(req.usedQuantity())
@@ -95,9 +98,10 @@ public class EquipmentService {
         SubEquipment entity = subEquipmentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Sub equipment not found with id: " + id));
+        if (req.type() != null) entity.setType(req.type());
         entity.setEquipmentType(req.equipmentType());
+        entity.setCameraModel(req.cameraModel());
         entity.setBrand(req.brand());
-        entity.setModel(req.model());
         entity.setCapacity(req.capacity());
         entity.setTotalQuantity(req.totalQuantity());
         entity.setUsedQuantity(req.usedQuantity());
@@ -133,6 +137,7 @@ public class EquipmentService {
         return new MainEquipmentResponse(
                 e.getMainEquipmentId(),
                 e.getEquipmentType(),
+                e.getLensType(),
                 e.getBrand(),
                 e.getModel(),
                 e.getSerialNumber(),
@@ -145,9 +150,10 @@ public class EquipmentService {
     private SubEquipmentResponse toSubResponse(SubEquipment e) {
         return new SubEquipmentResponse(
                 e.getSubEquipmentId(),
+                e.getType(),
                 e.getEquipmentType(),
+                e.getCameraModel(),
                 e.getBrand(),
-                e.getModel(),
                 e.getCapacity(),
                 e.getTotalQuantity(),
                 e.getUsedQuantity(),

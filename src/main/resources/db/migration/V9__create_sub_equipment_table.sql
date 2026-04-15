@@ -5,9 +5,10 @@
 
 CREATE TABLE sub_equipment (
     sub_equipment_id    BIGINT          AUTO_INCREMENT PRIMARY KEY,
+    type                VARCHAR(100)    NOT NULL,
     equipment_type      VARCHAR(100)    NOT NULL,
+    camera_model        JSON,
     brand               VARCHAR(100),
-    model               VARCHAR(100),
     capacity            INT             NOT NULL,
     total_quantity      INT             NOT NULL,
     used_quantity       INT             NOT NULL DEFAULT 0,
