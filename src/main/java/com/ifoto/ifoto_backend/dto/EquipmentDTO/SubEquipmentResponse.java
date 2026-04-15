@@ -1,10 +1,13 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
+import java.util.List;
+
 public record SubEquipmentResponse(
         Long subEquipmentId,
+        String type,
         String equipmentType,
+        List<String> cameraModel,
         String brand,
-        String model,
         int capacity,
         int totalQuantity,
         int usedQuantity,

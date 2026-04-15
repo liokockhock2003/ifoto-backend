@@ -8,6 +8,9 @@ public record MainEquipmentRequest(
         @Size(max = 100)
         String equipmentType,
 
+        @Size(max = 50)
+        String lensType,
+
         @Size(max = 100)
         String brand,
 
