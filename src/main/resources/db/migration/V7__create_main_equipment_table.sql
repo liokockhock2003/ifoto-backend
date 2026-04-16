@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────
--- V8: Create main_equipment table
+-- V7: Create main_equipment table
 -- Stores individual (serialized) equipment items
 -- ─────────────────────────────────────────────────────────────────
 

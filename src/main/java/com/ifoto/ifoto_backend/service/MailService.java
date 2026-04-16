@@ -18,6 +18,24 @@ public class MailService {
     @Value("${app.mail.app-name:iFoto}")
     private String appName;
 
+    public void sendVerificationEmail(String toEmail, String verificationLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setFrom(from);
+        message.setSubject(appName + " - Verify Your Email Address");
+        message.setText(buildVerificationBody(verificationLink));
+        mailSender.send(message);
+    }
+
+    private String buildVerificationBody(String verificationLink) {
+        return "Welcome to " + appName + "!\n\n"
+                + "Please verify your email address by clicking the link below:\n"
+                + verificationLink
+                + "\n\n"
+                + "This link will expire in 24 hours.\n\n"
+                + "If you did not create an account, please ignore this email.";
+    }
+
     public void sendPasswordResetEmail(String toEmail, String resetLink) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
