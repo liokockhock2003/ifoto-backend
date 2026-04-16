@@ -148,7 +148,7 @@
                     <user>${env.DEV_DB_USER}</user>
                     <password>${env.DEV_DB_PASS}</password>
                     <locations>
-                        <location>classpath:db/migration</location>
+                        <location>filesystem:src/main/resources/db/migration</location>
                     </locations>
                 </configuration>
             </plugin>

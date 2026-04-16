@@ -1,4 +1,4 @@
--- V6: Create password_reset_tokens table
+-- V5: Create password_reset_tokens table
 -- Stores one-time tokens for forgotten password flow
 
 CREATE TABLE password_reset_tokens (

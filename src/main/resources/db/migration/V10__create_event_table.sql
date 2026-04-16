@@ -1,4 +1,4 @@
--- V12: Create events + event_committee tables
+-- V10: Create events + event_committee tables
 -- events: core event data
 -- event_committee: join table mapping events to their committee members (users)
 

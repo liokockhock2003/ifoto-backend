@@ -1,0 +1,57 @@
+{"properties": [
+  {
+    "name": "app.mail.from",
+    "type": "java.lang.String",
+    "description": "From address used for all outgoing emails."
+  },
+  {
+    "name": "app.mail.app-name",
+    "type": "java.lang.String",
+    "description": "Application name used in email subjects and bodies."
+  },
+  {
+    "name": "app.password-reset.token-expiration-ms",
+    "type": "java.lang.Long",
+    "description": "Password-reset token TTL in milliseconds (default 15 min)."
+  },
+  {
+    "name": "app.password-reset.reset-url-base",
+    "type": "java.lang.String",
+    "description": "Base URL for the password-reset page on the frontend."
+  },
+  {
+    "name": "app.email-verification.token-expiration-ms",
+    "type": "java.lang.Long",
+    "description": "Email-verification token TTL in milliseconds (default 24 h)."
+  },
+  {
+    "name": "app.email-verification.verify-url-base",
+    "type": "java.lang.String",
+    "description": "Base URL for the email-verification page on the frontend."
+  },
+  {
+    "name": "app.cors.allowed-origins",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cors.allowed-origins'"
+  },
+  {
+    "name": "app.welcome.message",
+    "type": "java.lang.String",
+    "description": "A description for 'app.welcome.message'"
+  },
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "jwt.expiration-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.expiration-ms'"
+  },
+  {
+    "name": "jwt.refresh-expiration-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.refresh-expiration-ms'"
+  }
+]}

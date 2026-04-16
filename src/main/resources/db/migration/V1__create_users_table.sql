@@ -16,6 +16,7 @@ CREATE TABLE users (
 
     -- Status & security
     is_active               BOOLEAN     DEFAULT TRUE,
+    is_email_verified       BOOLEAN     DEFAULT FALSE,
     is_locked               BOOLEAN     DEFAULT FALSE,
     failed_login_attempts   INT         DEFAULT 0,
     last_login_at           TIMESTAMP   NULL,

@@ -54,6 +54,10 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
+    @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
+    private boolean isEmailVerified = false;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean isLocked = false;
