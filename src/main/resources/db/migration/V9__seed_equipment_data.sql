@@ -1,4 +1,4 @@
--- V11: Seed equipment test data
+-- V9: Seed equipment test data
 -- equipment_type: Camera | Lens   brands: Canon | Nikon
 -- lens_type (Lens only): PRIME | NORMAL | TELEPHOTO
 
@@ -57,24 +57,3 @@ INSERT INTO sub_equipment (type, equipment_type, camera_model, brand, capacity, 
 ('Lain-Lain', 'Wire Transfer',   NULL, NULL, 1,  6, 1,  5, 'USB-C data transfer cable'),
 ('Lain-Lain', 'Gimbal',          NULL, NULL, 1,  3, 1,  2, '3-axis camera stabiliser'),
 ('Lain-Lain', 'Card Reader',     NULL, NULL, 1, 10, 3,  7, 'Multi-slot USB-C card reader');
-
--- ── equipment_book_slots ──────────────────────────────────────────────────────
--- Slot 1: Canon EOS R5 booked for a shoot
-INSERT INTO equipment_book_slots (start_date, end_date, main_equipment_id, sub_equipment_id, quantity_used)
-SELECT '2026-04-10 08:00:00', '2026-04-11 20:00:00', m.main_equipment_id, NULL, 1
-FROM main_equipment m WHERE m.serial_number = 'SN-CANON-R5-001';
-
--- Slot 2: Nikon Z8 booked for a shoot
-INSERT INTO equipment_book_slots (start_date, end_date, main_equipment_id, sub_equipment_id, quantity_used)
-SELECT '2026-04-12 09:00:00', '2026-04-12 18:00:00', m.main_equipment_id, NULL, 1
-FROM main_equipment m WHERE m.serial_number = 'SN-NIKON-Z8-001';
-
--- Slot 3: Canon RF 24-70mm lens booked
-INSERT INTO equipment_book_slots (start_date, end_date, main_equipment_id, sub_equipment_id, quantity_used)
-SELECT '2026-04-10 08:00:00', '2026-04-11 20:00:00', m.main_equipment_id, NULL, 1
-FROM main_equipment m WHERE m.serial_number = 'SN-CANON-L-2470-001';
-
--- Slot 4: Nikon NIKKOR Z 70-200mm lens booked
-INSERT INTO equipment_book_slots (start_date, end_date, main_equipment_id, sub_equipment_id, quantity_used)
-SELECT '2026-04-12 09:00:00', '2026-04-12 18:00:00', m.main_equipment_id, NULL, 1
-FROM main_equipment m WHERE m.serial_number = 'SN-NIKON-L-70200-001';
