@@ -40,4 +40,11 @@ public class MainEquipment {
 
     @Column(name = "lens_type", length = 50)
     private String lensType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pricing_category_id")
+    private RentalCategory pricingCategory;
+
+    @Column(name = "is_for_rent", nullable = false)
+    private boolean isForRent;
 }

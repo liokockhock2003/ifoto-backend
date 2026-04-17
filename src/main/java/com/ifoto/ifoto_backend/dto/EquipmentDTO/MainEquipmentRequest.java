@@ -26,5 +26,9 @@ public record MainEquipmentRequest(
         @Size(max = 50)
         String status,
 
-        String notes
+        String notes,
+
+        Long pricingCategoryId,
+
+        boolean isForRent
 ) {}

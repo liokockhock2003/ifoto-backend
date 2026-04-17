@@ -41,7 +41,7 @@ INSERT INTO users (
     '+601122334455',
     NULL, TRUE, TRUE, FALSE, 0, NULL
 ),
--- ROLE_GUEST
+-- ROLE_NON_STUDENT
 (
     'lockeduser',
     'locked@ifoto.com',
@@ -91,29 +91,29 @@ SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'admin'
 AND r.name = 'ROLE_ADMIN';
 
--- johndoe → ROLE_GUEST
+-- johndoe → ROLE_NON_STUDENT
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'johndoe'
-AND r.name = 'ROLE_GUEST';
+AND r.name = 'ROLE_NON_STUDENT';
 
--- janedoe → ROLE_GUEST
+-- janedoe → ROLE_NON_STUDENT
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'janedoe'
-AND r.name = 'ROLE_GUEST';
+AND r.name = 'ROLE_NON_STUDENT';
 
--- lockeduser → ROLE_GUEST (locked account test)
+-- lockeduser → ROLE_NON_STUDENT (locked account test)
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'lockeduser'
-AND r.name = 'ROLE_GUEST';
+AND r.name = 'ROLE_NON_STUDENT';
 
--- guestuser → ROLE_GUEST
+-- guestuser → ROLE_NON_STUDENT
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r
 WHERE u.username = 'guestuser'
-AND r.name = 'ROLE_GUEST';
+AND r.name = 'ROLE_NON_STUDENT';
 
 -- eventcommittee → ROLE_EVENT_COMMITTEE
 INSERT INTO user_roles (user_id, role_id)
