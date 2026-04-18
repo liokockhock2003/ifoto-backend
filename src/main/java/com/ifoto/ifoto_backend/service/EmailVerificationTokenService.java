@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.exception.TokenException;
+import com.ifoto.ifoto_backend.exception.TokenException.Reason;
 import com.ifoto.ifoto_backend.model.EmailVerificationToken;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.repository.EmailVerificationTokenRepository;
@@ -7,11 +9,9 @@ import com.ifoto.ifoto_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
@@ -57,17 +57,17 @@ public class EmailVerificationTokenService {
     @Transactional
     public void verifyEmail(String token) {
         if (token == null || token.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification token is required");
+            throw new TokenException(Reason.MISSING, "Verification token is required");
         }
 
         EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification token"));
+                .orElseThrow(() -> new TokenException(Reason.INVALID, "Invalid verification token"));
 
         if (verificationToken.isUsed()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification token has already been used");
+            throw new TokenException(Reason.ALREADY_USED, "Verification token has already been used");
         }
         if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Verification token has expired");
+            throw new TokenException(Reason.EXPIRED, "Verification token has expired");
         }
 
         User user = verificationToken.getUser();
