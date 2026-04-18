@@ -7,9 +7,11 @@ import com.ifoto.ifoto_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
@@ -55,17 +57,17 @@ public class EmailVerificationTokenService {
     @Transactional
     public void verifyEmail(String token) {
         if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Verification token is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification token is required");
         }
 
         EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification token"));
 
         if (verificationToken.isUsed()) {
-            throw new IllegalArgumentException("Verification token has already been used");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification token has already been used");
         }
         if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Verification token has expired");
+            throw new ResponseStatusException(HttpStatus.GONE, "Verification token has expired");
         }
 
         User user = verificationToken.getUser();
