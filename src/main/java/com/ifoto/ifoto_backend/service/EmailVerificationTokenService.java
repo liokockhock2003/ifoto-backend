@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.exception.TokenException;
+import com.ifoto.ifoto_backend.exception.TokenException.Reason;
 import com.ifoto.ifoto_backend.model.EmailVerificationToken;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.repository.EmailVerificationTokenRepository;
@@ -55,17 +57,17 @@ public class EmailVerificationTokenService {
     @Transactional
     public void verifyEmail(String token) {
         if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Verification token is required");
+            throw new TokenException(Reason.MISSING, "Verification token is required");
         }
 
         EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
+                .orElseThrow(() -> new TokenException(Reason.INVALID, "Invalid verification token"));
 
         if (verificationToken.isUsed()) {
-            throw new IllegalArgumentException("Verification token has already been used");
+            throw new TokenException(Reason.ALREADY_USED, "Verification token has already been used");
         }
         if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Verification token has expired");
+            throw new TokenException(Reason.EXPIRED, "Verification token has expired");
         }
 
         User user = verificationToken.getUser();

@@ -1,6 +1,7 @@
 package com.ifoto.ifoto_backend.config;
 
 import com.ifoto.ifoto_backend.dto.ErrorResponse;
+import com.ifoto.ifoto_backend.exception.TokenException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +44,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnauthorized(AuthenticationException ex) {
         log.warn("Authentication failure [{}]: {}", ex.getClass().getSimpleName(), ex.getMessage());
         return ResponseEntity.status(UNAUTHORIZED).body(new ErrorResponse("Authentication failed"));
+    }
+
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity<ErrorResponse> handleToken(TokenException ex) {
+        if (ex.getReason() == TokenException.Reason.MISSING) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+        }
+        // INVALID, ALREADY_USED, EXPIRED all return the same response
+        // to prevent clients from inferring token validity
+        return ResponseEntity.badRequest().body(new ErrorResponse("Invalid or expired verification token"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
