@@ -1,4 +1,4 @@
--- V13: Seed sample event data
+-- V11: Seed sample event data
 -- Inserts two sample events and assigns committee members from seeded users
 
 -- ── seed events ───────────────────────────────────────────────────────────────

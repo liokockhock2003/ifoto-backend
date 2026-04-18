@@ -1,6 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────
--- V8: Create main_equipment table
+-- V7: Create main_equipment table
 -- Stores individual (serialized) equipment items
+-- pricing_category_id FK is added in V13 after rental_pricing_category exists
 -- ─────────────────────────────────────────────────────────────────
 
 CREATE TABLE main_equipment (
@@ -12,7 +13,9 @@ CREATE TABLE main_equipment (
     serial_number       VARCHAR(100)    UNIQUE,
     `condition`         VARCHAR(50),
     status              VARCHAR(50),
-    notes               TEXT
+    notes               TEXT,
+    pricing_category_id BIGINT,
+    is_for_rent         TINYINT(1) NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_main_equipment_type   ON main_equipment(equipment_type);

@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────
--- V9: Create sub_equipment table
+-- V8: Create sub_equipment table
 -- Stores pooled/quantity-tracked equipment (e.g. lenses, cables)
 -- ─────────────────────────────────────────────────────────────────
 

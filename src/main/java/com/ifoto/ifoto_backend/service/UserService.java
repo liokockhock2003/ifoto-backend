@@ -41,12 +41,16 @@ public class UserService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(validateRawPassword(user.getPasswordHash())));
+        user.setEmailVerified(false);
 
-        // Assign default role ROLE_GUEST if none provided
+        // Assign role based on email domain: UTM students get ROLE_STUDENT, everyone else gets ROLE_NON_STUDENT
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            Role guestRole = roleRepository.findByName("ROLE_GUEST")
-                    .orElseThrow(() -> new IllegalStateException("Default role ROLE_GUEST not found in database"));
-            user.setRoles(Set.of(guestRole));
+            boolean isStudent = user.getEmail() != null
+                    && user.getEmail().toLowerCase(Locale.ROOT).endsWith("@graduate.utm.my");
+            String roleName = isStudent ? "ROLE_STUDENT" : "ROLE_NON_STUDENT";
+            Role defaultRole = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new IllegalStateException("Default role " + roleName + " not found in database"));
+            user.setRoles(Set.of(defaultRole));
         }
 
         return userRepository.save(user);
@@ -236,23 +240,23 @@ public class UserService {
                 .map(Role::getName)
                 .collect(java.util.stream.Collectors.toSet());
 
-        // Rule 1: ADMIN, HIGH_COMMITTEE, EQUIPMENT_COMMITTEE always imply CLUB_MEMBER
-        boolean needsClubMember = names.contains("ROLE_ADMIN")
+        // Rule 1: ADMIN, HIGH_COMMITTEE, EQUIPMENT_COMMITTEE always imply STUDENT
+        boolean needsStudent = names.contains("ROLE_ADMIN")
                 || names.contains("ROLE_HIGH_COMMITTEE")
                 || names.contains("ROLE_EQUIPMENT_COMMITTEE");
 
-        if (needsClubMember && !names.contains("ROLE_CLUB_MEMBER")) {
-            Role clubMember = roleRepository.findByName("ROLE_CLUB_MEMBER")
-                    .orElseThrow(() -> new IllegalStateException("Role Club Member not found in database"));
+        if (needsStudent && !names.contains("ROLE_STUDENT")) {
+            Role clubMember = roleRepository.findByName("ROLE_STUDENT")
+                    .orElseThrow(() -> new IllegalStateException("Role ROLE_STUDENT not found in database"));
             resolvedRoles = new HashSet<>(resolvedRoles);
             resolvedRoles.add(clubMember);
             names = resolvedRoles.stream().map(Role::getName).collect(java.util.stream.Collectors.toSet());
         }
 
-        // Rule 2: CLUB_MEMBER and GUEST are mutually exclusive
-        if (names.contains("ROLE_CLUB_MEMBER") && names.contains("ROLE_GUEST")) {
+        // Rule 2: STUDENT and GUEST are mutually exclusive
+        if (names.contains("ROLE_STUDENT") && names.contains("ROLE_NON_STUDENT")) {
             throw new IllegalArgumentException(
-                    "Role Club Member and Role Guest cannot be assigned to the same user");
+                    "ROLE_STUDENT and ROLE_NON_STUDENT cannot be assigned to the same user");
         }
 
         // Rule 3: ADMIN and HIGH_COMMITTEE are mutually exclusive
@@ -263,9 +267,9 @@ public class UserService {
 
         // Rule 5: EVENT_COMMITTEE must declare a base membership type
         if (names.contains("ROLE_EVENT_COMMITTEE")) {
-            if (!names.contains("ROLE_CLUB_MEMBER") && !names.contains("ROLE_GUEST")) {
+            if (!names.contains("ROLE_STUDENT") && !names.contains("ROLE_NON_STUDENT")) {
                 throw new IllegalArgumentException(
-                        "Role Event Committee requires either Role Club Member or Role Guest to also be present");
+                        "ROLE_EVENT_COMMITTEE requires either ROLE_STUDENT or ROLE_NON_STUDENT to also be present");
             }
         }
 

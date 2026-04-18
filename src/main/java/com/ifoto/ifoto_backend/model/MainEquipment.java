@@ -3,9 +3,6 @@ package com.ifoto.ifoto_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Table(name = "main_equipment")
 @Getter
@@ -44,7 +41,10 @@ public class MainEquipment {
     @Column(name = "lens_type", length = 50)
     private String lensType;
 
-    @OneToMany(mappedBy = "mainEquipment", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<EquipmentBookSlots> bookSlots = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pricing_category_id")
+    private RentalCategory pricingCategory;
+
+    @Column(name = "is_for_rent", nullable = false)
+    private boolean isForRent;
 }

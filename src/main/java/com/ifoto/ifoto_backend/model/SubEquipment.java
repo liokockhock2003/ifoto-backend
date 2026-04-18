@@ -50,10 +50,6 @@ public class SubEquipment {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @OneToMany(mappedBy = "subEquipment", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<EquipmentBookSlots> bookSlots = new ArrayList<>();
-
     @PrePersist
     @PreUpdate
     private void validateQuantities() {
