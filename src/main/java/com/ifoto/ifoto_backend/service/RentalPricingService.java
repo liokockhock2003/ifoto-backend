@@ -45,8 +45,9 @@ public class RentalPricingService {
                 .orElseThrow(() -> new NoSuchElementException(
                         "No pricing found for category=%s memberType=%s".formatted(category, memberType)));
         if (durationDays == 1) return pricing.getRate1Day();
-        if (durationDays == 3) return pricing.getRate3Days();
-        return pricing.getRatePerDayExtra().multiply(BigDecimal.valueOf(durationDays));
+        if (durationDays <= 3) return pricing.getRate3Days();
+        BigDecimal extraDays = BigDecimal.valueOf(durationDays - 3);
+        return pricing.getRate3Days().add(pricing.getRatePerDayExtra().multiply(extraDays));
     }
 
     private RentalPricingResponse toResponse(RentalPricing p) {

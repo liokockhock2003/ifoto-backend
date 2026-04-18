@@ -14,4 +14,6 @@ public interface RentalPricingRepository extends JpaRepository<RentalPricing, Lo
             RentalPricingCategory categoryName, MemberType memberType);
 
     List<RentalPricing> findByPricingCategory_Name(RentalPricingCategory categoryName);
+
+    List<RentalPricing> findByMemberType(MemberType memberType);
 }

@@ -9,6 +9,8 @@ import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
 import com.ifoto.ifoto_backend.model.MainEquipment;
 import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.model.RentalCategory;
+import com.ifoto.ifoto_backend.model.RentalPricing;
+import com.ifoto.ifoto_backend.model.RentalPricingCategory;
 import com.ifoto.ifoto_backend.model.SubEquipment;
 import com.ifoto.ifoto_backend.repository.MainEquipmentRepository;
 import com.ifoto.ifoto_backend.repository.RentalCategoryRepository;
@@ -21,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -165,29 +169,37 @@ public class EquipmentService {
 
     @Transactional(readOnly = true)
     public List<RentableEquipmentResponse> getRentableEquipment(MemberType memberType) {
+        // 1 query: all pricing rows for this member type, keyed by category
+        Map<RentalPricingCategory, RentalPricing> pricingMap = rentalPricingRepository
+                .findByMemberType(memberType)
+                .stream()
+                .collect(Collectors.toMap(p -> p.getPricingCategory().getName(), p -> p));
+
+        // 1 query: all rentable equipment; join in memory
         return mainEquipmentRepository.findByIsForRentTrue().stream()
                 .filter(e -> e.getPricingCategory() != null)
-                .flatMap(e -> rentalPricingRepository
-                        .findByPricingCategory_NameAndMemberType(e.getPricingCategory().getName(), memberType)
-                        .map(pricing -> new RentableEquipmentResponse(
-                                e.getMainEquipmentId(),
-                                e.getEquipmentType(),
-                                e.getLensType(),
-                                e.getBrand(),
-                                e.getModel(),
-                                e.getSerialNumber(),
-                                e.getCondition(),
-                                e.getStatus(),
-                                e.getNotes(),
-                                e.getPricingCategory().getId(),
-                                e.getPricingCategory().getName(),
-                                pricing.getMemberType(),
-                                pricing.getRate1Day(),
-                                pricing.getRate3Days(),
-                                pricing.getRatePerDayExtra(),
-                                pricing.getLatePenaltyPerDay()
-                        ))
-                        .stream())
+                .filter(e -> pricingMap.containsKey(e.getPricingCategory().getName()))
+                .map(e -> {
+                    RentalPricing pricing = pricingMap.get(e.getPricingCategory().getName());
+                    return new RentableEquipmentResponse(
+                            e.getMainEquipmentId(),
+                            e.getEquipmentType(),
+                            e.getLensType(),
+                            e.getBrand(),
+                            e.getModel(),
+                            e.getSerialNumber(),
+                            e.getCondition(),
+                            e.getStatus(),
+                            e.getNotes(),
+                            e.getPricingCategory().getId(),
+                            e.getPricingCategory().getName(),
+                            pricing.getMemberType(),
+                            pricing.getRate1Day(),
+                            pricing.getRate3Days(),
+                            pricing.getRatePerDayExtra(),
+                            pricing.getLatePenaltyPerDay()
+                    );
+                })
                 .toList();
     }
 
