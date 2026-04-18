@@ -1,8 +1,11 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
+import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.model.RentalPricingCategory;
 
-public record MainEquipmentResponse(
+import java.math.BigDecimal;
+
+public record RentableEquipmentResponse(
         Long mainEquipmentId,
         String equipmentType,
         String lensType,
@@ -14,5 +17,9 @@ public record MainEquipmentResponse(
         String notes,
         Long pricingCategoryId,
         RentalPricingCategory pricingCategory,
-        boolean isForRent
+        MemberType memberType,
+        BigDecimal rate1Day,
+        BigDecimal rate3Days,
+        BigDecimal ratePerDayExtra,
+        BigDecimal latePenaltyPerDay
 ) {}

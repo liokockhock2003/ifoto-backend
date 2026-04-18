@@ -43,11 +43,11 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(validateRawPassword(user.getPasswordHash())));
         user.setEmailVerified(false);
 
-        // Assign role based on email domain: UTM students get ROLE_STUDENT, everyone else gets ROLE_GUEST
+        // Assign role based on email domain: UTM students get ROLE_STUDENT, everyone else gets ROLE_NON_STUDENT
         if (user.getRoles() == null || user.getRoles().isEmpty()) {
             boolean isStudent = user.getEmail() != null
                     && user.getEmail().toLowerCase(Locale.ROOT).endsWith("@graduate.utm.my");
-            String roleName = isStudent ? "ROLE_STUDENT" : "ROLE_GUEST";
+            String roleName = isStudent ? "ROLE_STUDENT" : "ROLE_NON_STUDENT";
             Role defaultRole = roleRepository.findByName(roleName)
                     .orElseThrow(() -> new IllegalStateException("Default role " + roleName + " not found in database"));
             user.setRoles(Set.of(defaultRole));
@@ -254,9 +254,9 @@ public class UserService {
         }
 
         // Rule 2: STUDENT and GUEST are mutually exclusive
-        if (names.contains("ROLE_STUDENT") && names.contains("ROLE_GUEST")) {
+        if (names.contains("ROLE_STUDENT") && names.contains("ROLE_NON_STUDENT")) {
             throw new IllegalArgumentException(
-                    "ROLE_STUDENT and ROLE_GUEST cannot be assigned to the same user");
+                    "ROLE_STUDENT and ROLE_NON_STUDENT cannot be assigned to the same user");
         }
 
         // Rule 3: ADMIN and HIGH_COMMITTEE are mutually exclusive
@@ -267,9 +267,9 @@ public class UserService {
 
         // Rule 5: EVENT_COMMITTEE must declare a base membership type
         if (names.contains("ROLE_EVENT_COMMITTEE")) {
-            if (!names.contains("ROLE_STUDENT") && !names.contains("ROLE_GUEST")) {
+            if (!names.contains("ROLE_STUDENT") && !names.contains("ROLE_NON_STUDENT")) {
                 throw new IllegalArgumentException(
-                        "ROLE_EVENT_COMMITTEE requires either ROLE_STUDENT or ROLE_GUEST to also be present");
+                        "ROLE_EVENT_COMMITTEE requires either ROLE_STUDENT or ROLE_NON_STUDENT to also be present");
             }
         }
 

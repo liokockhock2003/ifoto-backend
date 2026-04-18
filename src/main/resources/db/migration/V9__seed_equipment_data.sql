@@ -3,31 +3,31 @@
 -- lens_type (Lens only): PRIME | NORMAL | TELEPHOTO
 
 -- ── main_equipment ────────────────────────────────────────────────────────────
-INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, status, notes) VALUES
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, status, notes, is_for_rent) VALUES
 -- Cameras – Canon
-('Camera', 'Canon', NULL,        'EOS R5',                 'SN-CANON-R5-001',        'Excellent', 'Available', 'High-res full-frame mirrorless'),
-('Camera', 'Canon', NULL,        'EOS R6 II',              'SN-CANON-R6II-001',      'Good',      'Available', 'Sports & event mirrorless body'),
+('Camera', 'Canon', NULL,        'EOS R5',                 'SN-CANON-R5-001',        'Excellent', 'Available', 'High-res full-frame mirrorless',      1),
+('Camera', 'Canon', NULL,        'EOS R6 II',              'SN-CANON-R6II-001',      'Good',      'Available', 'Sports & event mirrorless body',       1),
 -- Cameras – Nikon
-('Camera', 'Nikon', NULL,        'Z8',                     'SN-NIKON-Z8-001',        'Excellent', 'Available', 'High-res Z-mount mirrorless'),
-('Camera', 'Nikon', NULL,        'Z6 III',                 'SN-NIKON-Z6III-001',     'Good',      'Available', 'Hybrid photo/video mirrorless body'),
--- Lenses – Canon – PRIME
-('Lens',   'Canon', 'PRIME',     'RF 50mm f/1.2L',         'SN-CANON-L-50-001',      'Excellent', 'Available', 'Flagship Canon prime lens'),
-('Lens',   'Canon', 'PRIME',     'RF 85mm f/1.2L DS',      'SN-CANON-L-85-001',      'Good',      'Available', 'Portrait prime with DS coating'),
+('Camera', 'Nikon', NULL,        'Z8',                     'SN-NIKON-Z8-001',        'Excellent', 'Available', 'High-res Z-mount mirrorless',          1),
+('Camera', 'Nikon', NULL,        'Z6 III',                 'SN-NIKON-Z6III-001',     'Good',      'Available', 'Hybrid photo/video mirrorless body',   1),
+-- Lenses – Canon – PRIME (not for rent)
+('Lens',   'Canon', 'PRIME',     'RF 50mm f/1.2L',         'SN-CANON-L-50-001',      'Excellent', 'Available', 'Flagship Canon prime lens',            0),
+('Lens',   'Canon', 'PRIME',     'RF 85mm f/1.2L DS',      'SN-CANON-L-85-001',      'Good',      'Available', 'Portrait prime with DS coating',       0),
 -- Lenses – Canon – NORMAL
-('Lens',   'Canon', 'NORMAL',    'RF 24-70mm f/2.8L',      'SN-CANON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Canon RF-mount'),
-('Lens',   'Canon', 'NORMAL',    'RF 15-35mm f/2.8L',      'SN-CANON-L-1535-001',    'Good',      'Available', 'Wide-angle zoom for Canon RF'),
+('Lens',   'Canon', 'NORMAL',    'RF 24-70mm f/2.8L',      'SN-CANON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Canon RF-mount',     1),
+('Lens',   'Canon', 'NORMAL',    'RF 15-35mm f/2.8L',      'SN-CANON-L-1535-001',    'Good',      'Available', 'Wide-angle zoom for Canon RF',         1),
 -- Lenses – Canon – TELEPHOTO
-('Lens',   'Canon', 'TELEPHOTO', 'RF 70-200mm f/2.8L',     'SN-CANON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Canon RF'),
-('Lens',   'Canon', 'TELEPHOTO', 'RF 100-500mm f/4.5L',    'SN-CANON-L-100500-001',  'Good',      'Available', 'Super-telephoto zoom for Canon RF'),
--- Lenses – Nikon – PRIME
-('Lens',   'Nikon', 'PRIME',     'NIKKOR Z 50mm f/1.2',    'SN-NIKON-L-50-001',      'Excellent', 'Available', 'Flagship Nikon Z prime lens'),
-('Lens',   'Nikon', 'PRIME',     'NIKKOR Z 85mm f/1.2',    'SN-NIKON-L-85-001',      'Good',      'Available', 'Portrait prime for Z-mount'),
+('Lens',   'Canon', 'TELEPHOTO', 'RF 70-200mm f/2.8L',     'SN-CANON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Canon RF',          1),
+('Lens',   'Canon', 'TELEPHOTO', 'RF 100-500mm f/4.5L',    'SN-CANON-L-100500-001',  'Good',      'Available', 'Super-telephoto zoom for Canon RF',    1),
+-- Lenses – Nikon – PRIME (not for rent)
+('Lens',   'Nikon', 'PRIME',     'NIKKOR Z 50mm f/1.2',    'SN-NIKON-L-50-001',      'Excellent', 'Available', 'Flagship Nikon Z prime lens',          0),
+('Lens',   'Nikon', 'PRIME',     'NIKKOR Z 85mm f/1.2',    'SN-NIKON-L-85-001',      'Good',      'Available', 'Portrait prime for Z-mount',           0),
 -- Lenses – Nikon – NORMAL
-('Lens',   'Nikon', 'NORMAL',    'NIKKOR Z 24-70mm f/2.8', 'SN-NIKON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Z-mount'),
-('Lens',   'Nikon', 'NORMAL',    'NIKKOR Z 14-30mm f/4',   'SN-NIKON-L-1430-001',    'Good',      'Available', 'Wide-angle zoom for Z-mount'),
+('Lens',   'Nikon', 'NORMAL',    'NIKKOR Z 24-70mm f/2.8', 'SN-NIKON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Z-mount',            1),
+('Lens',   'Nikon', 'NORMAL',    'NIKKOR Z 14-30mm f/4',   'SN-NIKON-L-1430-001',    'Good',      'Available', 'Wide-angle zoom for Z-mount',          1),
 -- Lenses – Nikon – TELEPHOTO
-('Lens',   'Nikon', 'TELEPHOTO', 'NIKKOR Z 70-200mm f/2.8','SN-NIKON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Z-mount'),
-('Lens',   'Nikon', 'TELEPHOTO', 'NIKKOR Z 100-400mm f/4.5','SN-NIKON-L-100400-001', 'Good',      'Available', 'Super-telephoto zoom for Z-mount');
+('Lens',   'Nikon', 'TELEPHOTO', 'NIKKOR Z 70-200mm f/2.8','SN-NIKON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Z-mount',           1),
+('Lens',   'Nikon', 'TELEPHOTO', 'NIKKOR Z 100-400mm f/4.5','SN-NIKON-L-100400-001', 'Good',      'Available', 'Super-telephoto zoom for Z-mount',     1);
 
 -- ── sub_equipment ─────────────────────────────────────────────────────────────
 -- type: Battery Camera | Charger Battery | Speedlight | SD Card/CF Card | Tripod | Lain-Lain

@@ -3,14 +3,23 @@ package com.ifoto.ifoto_backend.controller;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentListResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentResponse;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentableEquipmentResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
+import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.service.EquipmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/equipment")
@@ -24,6 +33,23 @@ public class EquipmentController {
     @GetMapping
     public ResponseEntity<EquipmentListResponse> getAllEquipment() {
         return ResponseEntity.ok(equipmentService.getAllEquipment());
+    }
+
+    @GetMapping("/rentable")
+    public ResponseEntity<List<RentableEquipmentResponse>> getRentableEquipment(Authentication auth) {
+        if (auth == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return ResponseEntity.ok(equipmentService.getRentableEquipment(resolveMemberType(auth)));
+    }
+
+    private MemberType resolveMemberType(Authentication auth) {
+        Set<String> roles = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
+        if (roles.contains("ROLE_NON_STUDENT")) return MemberType.NON_STUDENT;
+        if (roles.contains("ROLE_STUDENT"))     return MemberType.STUDENT;
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No membership role assigned");
     }
 
     // ── Main Equipment ────────────────────────────────────────────────────────

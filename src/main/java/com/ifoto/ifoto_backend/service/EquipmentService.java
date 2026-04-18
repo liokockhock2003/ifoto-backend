@@ -3,11 +3,18 @@ package com.ifoto.ifoto_backend.service;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentListResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentResponse;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentableEquipmentResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
 import com.ifoto.ifoto_backend.model.MainEquipment;
+import com.ifoto.ifoto_backend.model.MemberType;
+import com.ifoto.ifoto_backend.model.RentalCategory;
+import com.ifoto.ifoto_backend.model.RentalPricing;
+import com.ifoto.ifoto_backend.model.RentalPricingCategory;
 import com.ifoto.ifoto_backend.model.SubEquipment;
 import com.ifoto.ifoto_backend.repository.MainEquipmentRepository;
+import com.ifoto.ifoto_backend.repository.RentalCategoryRepository;
+import com.ifoto.ifoto_backend.repository.RentalPricingRepository;
 import com.ifoto.ifoto_backend.repository.SubEquipmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +32,8 @@ public class EquipmentService {
 
     private final MainEquipmentRepository mainEquipmentRepository;
     private final SubEquipmentRepository subEquipmentRepository;
+    private final RentalCategoryRepository rentalCategoryRepository;
+    private final RentalPricingRepository rentalPricingRepository;
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +46,7 @@ public class EquipmentService {
 
     @Transactional
     public MainEquipmentResponse addMainEquipment(MainEquipmentRequest req) {
+        RentalCategory pricingCategory = resolvePricingCategory(req.pricingCategoryId());
         MainEquipment entity = MainEquipment.builder()
                 .equipmentType(req.equipmentType())
                 .lensType(req.lensType())
@@ -44,6 +56,8 @@ public class EquipmentService {
                 .condition(req.condition())
                 .status(req.status())
                 .notes(req.notes())
+                .pricingCategory(pricingCategory)
+                .isForRent(req.isForRent())
                 .build();
         MainEquipment saved = mainEquipmentRepository.save(entity);
         return toMainResponse(saved);
@@ -62,6 +76,8 @@ public class EquipmentService {
         entity.setCondition(req.condition());
         entity.setStatus(req.status());
         entity.setNotes(req.notes());
+        entity.setPricingCategory(resolvePricingCategory(req.pricingCategoryId()));
+        entity.setForRent(req.isForRent());
         return toMainResponse(mainEquipmentRepository.save(entity));
     }
 
@@ -134,6 +150,7 @@ public class EquipmentService {
     }
 
     private MainEquipmentResponse toMainResponse(MainEquipment e) {
+        RentalCategory pc = e.getPricingCategory();
         return new MainEquipmentResponse(
                 e.getMainEquipmentId(),
                 e.getEquipmentType(),
@@ -143,8 +160,54 @@ public class EquipmentService {
                 e.getSerialNumber(),
                 e.getCondition(),
                 e.getStatus(),
-                e.getNotes()
+                e.getNotes(),
+                pc != null ? pc.getId() : null,
+                pc != null ? pc.getName() : null,
+                e.isForRent()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentableEquipmentResponse> getRentableEquipment(MemberType memberType) {
+        // 1 query: all pricing rows for this member type, keyed by category
+        Map<RentalPricingCategory, RentalPricing> pricingMap = rentalPricingRepository
+                .findByMemberType(memberType)
+                .stream()
+                .collect(Collectors.toMap(p -> p.getPricingCategory().getName(), p -> p));
+
+        // 1 query: all rentable equipment; join in memory
+        return mainEquipmentRepository.findByIsForRentTrue().stream()
+                .filter(e -> e.getPricingCategory() != null)
+                .filter(e -> pricingMap.containsKey(e.getPricingCategory().getName()))
+                .map(e -> {
+                    RentalPricing pricing = pricingMap.get(e.getPricingCategory().getName());
+                    return new RentableEquipmentResponse(
+                            e.getMainEquipmentId(),
+                            e.getEquipmentType(),
+                            e.getLensType(),
+                            e.getBrand(),
+                            e.getModel(),
+                            e.getSerialNumber(),
+                            e.getCondition(),
+                            e.getStatus(),
+                            e.getNotes(),
+                            e.getPricingCategory().getId(),
+                            e.getPricingCategory().getName(),
+                            pricing.getMemberType(),
+                            pricing.getRate1Day(),
+                            pricing.getRate3Days(),
+                            pricing.getRatePerDayExtra(),
+                            pricing.getLatePenaltyPerDay()
+                    );
+                })
+                .toList();
+    }
+
+    private RentalCategory resolvePricingCategory(Long pricingCategoryId) {
+        if (pricingCategoryId == null) return null;
+        return rentalCategoryRepository.findById(pricingCategoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Pricing category not found with id: " + pricingCategoryId));
     }
 
     private SubEquipmentResponse toSubResponse(SubEquipment e) {
