@@ -2,9 +2,9 @@ package com.ifoto.ifoto_backend.service;
 
 import com.ifoto.ifoto_backend.dto.RentalPricingDTO.RentalPricingBulkUpdateRequest;
 import com.ifoto.ifoto_backend.dto.RentalPricingDTO.RentalPricingResponse;
-import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.model.RentalPricing;
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
 import com.ifoto.ifoto_backend.repository.RentalPricingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,8 +44,8 @@ public class RentalPricingService {
                 .findByPricingCategory_NameAndMemberType(category, memberType)
                 .orElseThrow(() -> new NoSuchElementException(
                         "No pricing found for category=%s memberType=%s".formatted(category, memberType)));
-        if (durationDays == 1) return pricing.getRate1Day();
-        if (durationDays <= 3) return pricing.getRate3Days();
+        if (durationDays <= 2) return pricing.getRate1Day().multiply(BigDecimal.valueOf(durationDays));
+        if (durationDays == 3) return pricing.getRate3Days();
         BigDecimal extraDays = BigDecimal.valueOf(durationDays - 3);
         return pricing.getRate3Days().add(pricing.getRatePerDayExtra().multiply(extraDays));
     }

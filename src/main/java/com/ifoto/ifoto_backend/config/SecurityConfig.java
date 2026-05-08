@@ -58,6 +58,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/committee/**").hasAnyRole("HIGH_COMMITTEE", "EVENT_COMMITTEE")
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/users/**").hasAnyRole("ADMIN", "HIGH_COMMITTEE")
                         .requestMatchers("/api/v1/events/**").hasRole("HIGH_COMMITTEE")
+                        // Rental endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rentals/trigger-active").hasRole("EQUIPMENT_COMMITTEE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rentals/trigger-overdue").hasRole("EQUIPMENT_COMMITTEE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rentals").hasAnyRole("STUDENT", "NON_STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/rentals/my").hasAnyRole("STUDENT", "NON_STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rentals/*/pay").hasAnyRole("STUDENT", "NON_STUDENT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/rentals/*").hasAnyRole("STUDENT", "NON_STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/rentals").hasRole("EQUIPMENT_COMMITTEE")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/rentals/**").hasRole("EQUIPMENT_COMMITTEE")
+                        // Payment callback (public — Billplz server POSTs here)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/callback").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/result").permitAll()
+                        // Receipt endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/v1/receipts/my").hasAnyRole("STUDENT", "NON_STUDENT")
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

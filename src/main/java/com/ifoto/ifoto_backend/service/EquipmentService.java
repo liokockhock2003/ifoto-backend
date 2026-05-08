@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.BookedDateRange;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentListResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentResponse;
@@ -7,11 +8,13 @@ import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentableEquipmentResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
 import com.ifoto.ifoto_backend.model.MainEquipment;
-import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.model.RentalCategory;
 import com.ifoto.ifoto_backend.model.RentalPricing;
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
 import com.ifoto.ifoto_backend.model.SubEquipment;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
+import com.ifoto.ifoto_backend.repository.EquipmentRentalItemRepository;
 import com.ifoto.ifoto_backend.repository.MainEquipmentRepository;
 import com.ifoto.ifoto_backend.repository.RentalCategoryRepository;
 import com.ifoto.ifoto_backend.repository.RentalPricingRepository;
@@ -34,6 +37,7 @@ public class EquipmentService {
     private final SubEquipmentRepository subEquipmentRepository;
     private final RentalCategoryRepository rentalCategoryRepository;
     private final RentalPricingRepository rentalPricingRepository;
+    private final EquipmentRentalItemRepository equipmentRentalItemRepository;
 
     // ── Read ──────────────────────────────────────────────────────────────────
 
@@ -76,7 +80,9 @@ public class EquipmentService {
         entity.setCondition(req.condition());
         entity.setStatus(req.status());
         entity.setNotes(req.notes());
-        entity.setPricingCategory(resolvePricingCategory(req.pricingCategoryId()));
+        if (req.pricingCategoryId() != null) {
+            entity.setPricingCategory(resolvePricingCategory(req.pricingCategoryId()));
+        }
         entity.setForRent(req.isForRent());
         return toMainResponse(mainEquipmentRepository.save(entity));
     }
@@ -175,10 +181,23 @@ public class EquipmentService {
                 .stream()
                 .collect(Collectors.toMap(p -> p.getPricingCategory().getName(), p -> p));
 
-        // 1 query: all rentable equipment; join in memory
-        return mainEquipmentRepository.findByIsForRentTrue().stream()
+        List<MainEquipment> rentableList = mainEquipmentRepository.findByIsForRentTrue().stream()
                 .filter(e -> e.getPricingCategory() != null)
                 .filter(e -> pricingMap.containsKey(e.getPricingCategory().getName()))
+                .toList();
+
+        // 1 batch query: booked date ranges for all equipment IDs
+        List<Long> ids = rentableList.stream().map(MainEquipment::getMainEquipmentId).toList();
+        List<RentalStatus> bookedStatuses = List.of(
+                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT, RentalStatus.PENDING_CASH,
+                RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE,
+                RentalStatus.PENDING_REVIEW);
+        Map<Long, List<BookedDateRange>> bookedMap = equipmentRentalItemRepository
+                .findBookedDateRanges(ids, bookedStatuses, RentalStatus.PENDING_REVIEW)
+                .stream()
+                .collect(Collectors.groupingBy(BookedDateRange::equipmentId));
+
+        return rentableList.stream()
                 .map(e -> {
                     RentalPricing pricing = pricingMap.get(e.getPricingCategory().getName());
                     return new RentableEquipmentResponse(
@@ -197,7 +216,8 @@ public class EquipmentService {
                             pricing.getRate1Day(),
                             pricing.getRate3Days(),
                             pricing.getRatePerDayExtra(),
-                            pricing.getLatePenaltyPerDay()
+                            pricing.getLatePenaltyPerDay(),
+                            bookedMap.getOrDefault(e.getMainEquipmentId(), List.of())
                     );
                 })
                 .toList();

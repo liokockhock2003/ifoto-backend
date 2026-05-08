@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.model;
 
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+
 import jakarta.persistence.*;
 import lombok.*;
 

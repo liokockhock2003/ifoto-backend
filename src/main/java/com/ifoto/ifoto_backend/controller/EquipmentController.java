@@ -6,7 +6,7 @@ import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentableEquipmentResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentRequest;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
-import com.ifoto.ifoto_backend.model.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
 import com.ifoto.ifoto_backend.service.EquipmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
