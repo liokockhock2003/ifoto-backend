@@ -34,6 +34,7 @@ public class EquipmentRentalService {
     private final EquipmentRentalItemRepository rentalItemRepository;
     private final MainEquipmentRepository mainEquipmentRepository;
     private final RentalPricingRepository pricingRepository;
+    private final RentalPricingService rentalPricingService;
     private final UserRepository userRepository;
     private final PaymentService paymentService;
     private final MailService mailService;
@@ -365,7 +366,7 @@ public class EquipmentRentalService {
             long rate3Days = toC(pricing.getRate3Days());
             long rateExtra = toC(pricing.getRatePerDayExtra());
             long latePenalty = toC(pricing.getLatePenaltyPerDay());
-            long baseAmount = calcBase(rate1Day, rate3Days, rateExtra, durationDays);
+            long baseAmount = toC(rentalPricingService.calculateCost(pricing, durationDays));
 
             items.add(EquipmentRentalItem.builder()
                     .equipmentRental(rental)
@@ -388,9 +389,4 @@ public class EquipmentRentalService {
         return rm.multiply(BigDecimal.valueOf(100)).longValue();
     }
 
-    private long calcBase(long rate1Day, long rate3Days, long rateExtra, int days) {
-        if (days <= 2) return rate1Day * days;
-        if (days == 3) return rate3Days;
-        return rate3Days + rateExtra * (days - 3);
-    }
 }

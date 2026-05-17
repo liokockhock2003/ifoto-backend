@@ -38,13 +38,7 @@ public class BillplzXSignatureService {
             byte[] hash = mac.doFinal(source.getBytes(StandardCharsets.UTF_8));
             String computed = HexFormat.of().formatHex(hash);
 
-            String key = billplzConfig.getXSignatureKey();
-            log.info("XSig key length={}, first20='{}', last20='{}'",
-                    key.length(),
-                    key.substring(0, Math.min(20, key.length())),
-                    key.substring(Math.max(0, key.length() - 20)));
-            log.info("XSig string-to-sign: '{}'", source);
-            log.info("XSig computed='{}', received='{}'", computed, receivedSignature);
+            log.debug("XSig key length={}, payload length={}", billplzConfig.getXSignatureKey().length(), source.length());
             return computed.equalsIgnoreCase(receivedSignature);
         } catch (Exception e) {
             log.error("XSig verify error", e);
