@@ -5,5 +5,6 @@ public enum RentalPaymentStatus {
     ONLINE_PENDING,
     ONLINE_PAID,
     CASH_PENDING,
-    CASH_CONFIRMED
+    CASH_PAID,
+    PENALTY_PAID
 }

@@ -13,6 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -55,7 +59,7 @@ public class EquipmentRentalService {
 
         // Block on conflict with already-approved/active rentals
         List<RentalStatus> blockingStatuses = List.of(
-                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT, RentalStatus.PENDING_CASH,
+                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
                 RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE);
         for (MainEquipment eq : equipmentList) {
             if (rentalItemRepository.existsConflictingApprovedRental(
@@ -138,7 +142,7 @@ public class EquipmentRentalService {
 
         // Hard availability check — approved dates only, exclude self
         List<RentalStatus> blockingStatuses = List.of(
-                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT, RentalStatus.PENDING_CASH,
+                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
                 RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE);
         for (MainEquipment eq : equipmentList) {
             if (rentalItemRepository.existsConflictingApprovedRental(
@@ -223,8 +227,8 @@ public class EquipmentRentalService {
     @Transactional
     public EquipmentRental confirmCash(Long id, String username) {
         EquipmentRental rental = findRental(id);
-        if (rental.getStatus() != RentalStatus.PENDING_CASH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental is not in PENDING_CASH status");
+        if (rental.getStatus() != RentalStatus.PENDING_PAYMENT || rental.getPaymentStatus() != RentalPaymentStatus.CASH_PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental is not in PENDING_PAYMENT status with CASH payment method");
         }
         User committee = findUser(username);
         paymentService.confirmCashPayment(rental, committee);
@@ -293,6 +297,16 @@ public class EquipmentRentalService {
     @Transactional(readOnly = true)
     public List<EquipmentRental> getAllRentals() {
         return rentalRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EquipmentRental> getAllRentals(String search, String status, int page, int size) {
+        int clampedPage = Math.max(page, 0);
+        int clampedSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(clampedPage, clampedSize);
+        String s = (search == null) ? "" : search.trim();
+        String st = (status == null) ? "" : status.trim();
+        return rentalRepository.searchRentals(s, st, pageable);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────

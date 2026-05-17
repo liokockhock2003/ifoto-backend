@@ -33,6 +33,10 @@ public class CashPaymentHandler implements PaymentMethodHandler {
 
     @Override
     public void initiate(EquipmentRental rental, User renter) {
+        if (rental.getPaymentStatus() == RentalPaymentStatus.PENALTY_PAID) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Penalty has already been paid");
+        }
+
         boolean isPenaltyPayment = rental.getStatus() == RentalStatus.RETURNED
                 && rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
         if (rental.getStatus() != RentalStatus.APPROVED && !isPenaltyPayment) {
@@ -50,9 +54,9 @@ public class CashPaymentHandler implements PaymentMethodHandler {
                 .build();
         paymentRepository.save(payment);
 
-        rental.setStatus(RentalStatus.PENDING_CASH);
         rental.setPaymentMethod(RentalPaymentMethod.CASH);
         rental.setPaymentStatus(RentalPaymentStatus.CASH_PENDING);
+        rental.setStatus(RentalStatus.PENDING_PAYMENT);
 
         List<String> committeeEmails = userRepository.findAllByRoleName("ROLE_EQUIPMENT_COMMITTEE")
                 .stream().map(User::getEmail).toList();

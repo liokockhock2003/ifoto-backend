@@ -46,7 +46,9 @@ public class PaymentService {
             return;
         }
 
+        log.info("Callback paid={} state={}", params.get("paid"), params.get("state"));
         if ("true".equals(params.get("paid")) && "paid".equals(params.get("state"))) {
+            log.info("Payment {} marked PAID", payment.getId());
             payment.setStatus(PaymentRecordStatus.PAID);
             payment.setPaidAmount(payment.getAmount());
             payment.setPaidAt(LocalDateTime.now());
@@ -56,18 +58,30 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             EquipmentRental rental = payment.getEquipmentRental();
-            rental.setStatus(RentalStatus.PAID);
-            rental.setPaidAt(LocalDateTime.now());
-            rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PAID);
+            log.info("Rental {} current status={}, paymentStatus={}", rental.getRentalNumber(), rental.getStatus(), rental.getPaymentStatus());
+            boolean isPenalty = rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
+            if (isPenalty) {
+                log.info("Penalty payment confirmed for rental {}", rental.getRentalNumber());
+                rental.setStatus(RentalStatus.RETURNED);
+                rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
+            } else {
+                log.info("Normal payment confirmed for rental {}, setting PAID", rental.getRentalNumber());
+                rental.setStatus(RentalStatus.PAID);
+                rental.setPaidAt(LocalDateTime.now());
+                rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PAID);
+            }
 
             Receipt receipt = receiptService.createReceipt(rental, payment);
             mailService.sendPaymentConfirmedToRenter(
                     rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
 
         } else if ("false".equals(params.get("paid"))) {
+            log.info("Payment {} marked FAILED", payment.getId());
             payment.setStatus(PaymentRecordStatus.FAILED);
             payment.setTransactionStatus(params.get("state"));
             paymentRepository.save(payment);
+        } else {
+            log.warn("Unhandled callback state — paid={}, state={}", params.get("paid"), params.get("state"));
         }
     }
 
@@ -104,9 +118,15 @@ public class PaymentService {
         payment.setConfirmedAt(LocalDateTime.now());
         paymentRepository.save(payment);
 
-        rental.setStatus(RentalStatus.PAID);
-        rental.setPaidAt(LocalDateTime.now());
-        rental.setPaymentStatus(RentalPaymentStatus.CASH_CONFIRMED);
+        boolean isPenalty = rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
+        if (isPenalty) {
+            rental.setStatus(RentalStatus.RETURNED);
+            rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
+        } else {
+            rental.setStatus(RentalStatus.PAID);
+            rental.setPaidAt(LocalDateTime.now());
+            rental.setPaymentStatus(RentalPaymentStatus.CASH_PAID);
+        }
 
         Receipt receipt = receiptService.createReceipt(rental, payment);
         mailService.sendPaymentConfirmedToRenter(

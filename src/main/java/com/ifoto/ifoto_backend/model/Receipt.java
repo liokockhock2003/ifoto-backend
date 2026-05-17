@@ -21,8 +21,8 @@ public class Receipt {
     @Column(name = "receipt_number", length = 20, unique = true, nullable = false)
     private String receiptNumber;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "equipment_rental_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "equipment_rental_id", nullable = false)
     private EquipmentRental equipmentRental;
 
     @OneToOne(fetch = FetchType.LAZY)

@@ -6,7 +6,6 @@ public enum RentalStatus {
     REJECTED,
     CANCELLED,
     PENDING_PAYMENT,
-    PENDING_CASH,
     PAID,
     ACTIVE,
     OVERDUE,

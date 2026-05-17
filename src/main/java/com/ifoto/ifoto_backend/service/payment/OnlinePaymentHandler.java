@@ -32,8 +32,16 @@ public class OnlinePaymentHandler implements PaymentMethodHandler {
 
     @Override
     public void initiate(EquipmentRental rental, User renter) {
+        if (rental.getPaymentStatus() == RentalPaymentStatus.PENALTY_PAID) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Penalty has already been paid");
+        }
+
         boolean isPenaltyPayment = rental.getStatus() == RentalStatus.RETURNED
                 && rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
+
+        // Allow re-calling when payment is already pending — return existing bill URL
+        if (rental.getStatus() == RentalStatus.PENDING_PAYMENT) return;
+
         if (rental.getStatus() != RentalStatus.APPROVED && !isPenaltyPayment) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental must be APPROVED to initiate payment");
         }
@@ -56,8 +64,8 @@ public class OnlinePaymentHandler implements PaymentMethodHandler {
         payment.setDueAt(bill.dueAt());
         paymentRepository.save(payment);
 
-        rental.setStatus(RentalStatus.PENDING_PAYMENT);
         rental.setPaymentMethod(RentalPaymentMethod.ONLINE);
         rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PENDING);
+        rental.setStatus(RentalStatus.PENDING_PAYMENT);
     }
 }

@@ -9,11 +9,14 @@ import com.ifoto.ifoto_backend.model.Payment;
 import com.ifoto.ifoto_backend.scheduler.RentalScheduler;
 import com.ifoto.ifoto_backend.service.EquipmentRentalService;
 import com.ifoto.ifoto_backend.service.PaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -30,7 +33,7 @@ public class EquipmentRentalController {
 
     @PostMapping
     public ResponseEntity<RentalResponse> submitRental(
-            @RequestBody RentalRequest req, Authentication auth) {
+            @Valid @RequestBody RentalRequest req, Authentication auth) {
         EquipmentRental rental = rentalService.submitRental(
                 req.equipmentIds(), req.startDate(), req.endDate(), req.notes(), auth.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(rental));
@@ -75,15 +78,19 @@ public class EquipmentRentalController {
     // ── Committee endpoints ───────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<List<RentalResponse>> getAllRentals() {
-        return ResponseEntity.ok(rentalService.getAllRentals()
-                .stream().map(this::toResponse).toList());
+    public ResponseEntity<Page<RentalResponse>> getAllRentals(
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(
+                rentalService.getAllRentals(search, status, page, size).map(this::toResponse));
     }
 
     @PatchMapping("/{id}/review")
     public ResponseEntity<RentalResponse> reviewRental(
             @PathVariable Long id,
-            @RequestBody RentalReviewRequest req,
+            @Valid @RequestBody RentalReviewRequest req,
             Authentication auth) {
         EquipmentRental rental = rentalService.reviewRental(
                 id, req.action(), req.approvedStartDate(), req.approvedEndDate(),

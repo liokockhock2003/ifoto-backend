@@ -189,7 +189,7 @@ public class EquipmentService {
         // 1 batch query: booked date ranges for all equipment IDs
         List<Long> ids = rentableList.stream().map(MainEquipment::getMainEquipmentId).toList();
         List<RentalStatus> bookedStatuses = List.of(
-                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT, RentalStatus.PENDING_CASH,
+                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
                 RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE,
                 RentalStatus.PENDING_REVIEW);
         Map<Long, List<BookedDateRange>> bookedMap = equipmentRentalItemRepository
