@@ -1,9 +1,10 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
-import com.ifoto.ifoto_backend.model.MemberType;
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record RentableEquipmentResponse(
         Long mainEquipmentId,
@@ -21,5 +22,6 @@ public record RentableEquipmentResponse(
         BigDecimal rate1Day,
         BigDecimal rate3Days,
         BigDecimal ratePerDayExtra,
-        BigDecimal latePenaltyPerDay
+        BigDecimal latePenaltyPerDay,
+        List<BookedDateRange> bookedDates
 ) {}

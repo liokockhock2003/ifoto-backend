@@ -1,6 +1,6 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
 
 public record MainEquipmentResponse(
         Long mainEquipmentId,

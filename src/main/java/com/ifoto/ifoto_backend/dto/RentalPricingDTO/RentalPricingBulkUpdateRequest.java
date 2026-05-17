@@ -1,7 +1,8 @@
 package com.ifoto.ifoto_backend.dto.RentalPricingDTO;
 
-import com.ifoto.ifoto_backend.model.MemberType;
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;

@@ -10,10 +10,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Documented
-@Constraint(validatedBy = {EventDateRangeValidator.class})
+@Constraint(validatedBy = {DateRangeValidator.class})
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EventDateRangeValid {
+public @interface DateRangeValid {
     String message() default "End date must not be before start date";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};

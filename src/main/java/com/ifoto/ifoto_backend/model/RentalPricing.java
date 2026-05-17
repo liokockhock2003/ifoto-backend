@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+
 @Entity
 @Table(
         name = "rental_pricing",

@@ -1,4 +1,4 @@
-package com.ifoto.ifoto_backend.model;
+package com.ifoto.ifoto_backend.model.enumerator;
 
 public enum MemberType {
     STUDENT,

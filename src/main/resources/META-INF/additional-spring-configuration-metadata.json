@@ -53,5 +53,35 @@
     "name": "jwt.refresh-expiration-ms",
     "type": "java.lang.String",
     "description": "A description for 'jwt.refresh-expiration-ms'"
+  },
+  {
+    "name": "billplz.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.api-key'"
+  },
+  {
+    "name": "billplz.collection-id",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.collection-id'"
+  },
+  {
+    "name": "billplz.x-signature-key",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.x-signature-key'"
+  },
+  {
+    "name": "billplz.base-url",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.base-url'"
+  },
+  {
+    "name": "billplz.callback-url",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.callback-url'"
+  },
+  {
+    "name": "billplz.redirect-url",
+    "type": "java.lang.String",
+    "description": "A description for 'billplz.redirect-url'"
   }
 ]}
