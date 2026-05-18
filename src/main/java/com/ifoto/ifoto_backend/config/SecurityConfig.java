@@ -67,6 +67,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/rentals/*").hasAnyRole("STUDENT", "NON_STUDENT")
                         .requestMatchers(HttpMethod.GET, "/api/v1/rentals").hasRole("EQUIPMENT_COMMITTEE")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/rentals/**").hasRole("EQUIPMENT_COMMITTEE")
+                        // Reports
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reports/**").hasAnyRole("EQUIPMENT_COMMITTEE", "HIGH_COMMITTEE")
                         // Payment callback (public — Billplz server POSTs here)
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/callback").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/result").permitAll()

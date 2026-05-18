@@ -54,4 +54,17 @@ public interface EquipmentRentalItemRepository extends JpaRepository<EquipmentRe
                         @Param("equipmentIds") List<Long> equipmentIds,
                         @Param("statuses") Collection<RentalStatus> statuses,
                         @Param("pendingStatus") RentalStatus pendingStatus);
+
+        @Query("""
+                        SELECT i.mainEquipment.mainEquipmentId,
+                               i.mainEquipment.brand,
+                               i.mainEquipment.model,
+                               i.mainEquipment.equipmentType,
+                               COUNT(i)
+                        FROM EquipmentRentalItem i
+                        GROUP BY i.mainEquipment.mainEquipmentId, i.mainEquipment.brand,
+                                 i.mainEquipment.model, i.mainEquipment.equipmentType
+                        ORDER BY COUNT(i) DESC
+                        """)
+        List<Object[]> equipmentUtilization();
 }
