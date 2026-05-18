@@ -1,6 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.BookedDateRange;
+import com.ifoto.ifoto_backend.dto.ReportDTO.EquipmentUtilizationProjection;
 import com.ifoto.ifoto_backend.model.EquipmentRentalItem;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -54,4 +55,17 @@ public interface EquipmentRentalItemRepository extends JpaRepository<EquipmentRe
                         @Param("equipmentIds") List<Long> equipmentIds,
                         @Param("statuses") Collection<RentalStatus> statuses,
                         @Param("pendingStatus") RentalStatus pendingStatus);
+
+        @Query("""
+                        SELECT i.mainEquipment.mainEquipmentId AS equipmentId,
+                               i.mainEquipment.brand            AS brand,
+                               i.mainEquipment.model            AS model,
+                               i.mainEquipment.equipmentType    AS equipmentType,
+                               COUNT(i)                         AS rentalCount
+                        FROM EquipmentRentalItem i
+                        GROUP BY i.mainEquipment.mainEquipmentId, i.mainEquipment.brand,
+                                 i.mainEquipment.model, i.mainEquipment.equipmentType
+                        ORDER BY COUNT(i) DESC
+                        """)
+        List<EquipmentUtilizationProjection> equipmentUtilization();
 }
