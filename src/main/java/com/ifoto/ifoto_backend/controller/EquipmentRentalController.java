@@ -5,6 +5,7 @@ import com.ifoto.ifoto_backend.dto.PaymentDTO.InitiatePaymentRequest;
 import com.ifoto.ifoto_backend.dto.PaymentDTO.PaymentResponse;
 import com.ifoto.ifoto_backend.model.EquipmentRental;
 import com.ifoto.ifoto_backend.model.EquipmentRentalItem;
+import com.ifoto.ifoto_backend.model.EquipmentRentalSubItem;
 import com.ifoto.ifoto_backend.model.Payment;
 import com.ifoto.ifoto_backend.scheduler.RentalScheduler;
 import com.ifoto.ifoto_backend.service.EquipmentRentalService;
@@ -35,7 +36,8 @@ public class EquipmentRentalController {
     public ResponseEntity<RentalResponse> submitRental(
             @Valid @RequestBody RentalRequest req, Authentication auth) {
         EquipmentRental rental = rentalService.submitRental(
-                req.equipmentIds(), req.startDate(), req.endDate(), req.notes(), auth.getName());
+                req.equipmentIds(), req.startDate(), req.endDate(), req.notes(), auth.getName(),
+                req.subEquipmentEntries());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(rental));
     }
 
@@ -147,7 +149,23 @@ public class EquipmentRentalController {
                 r.getCommitteeNotes(),
                 r.getRenterNotes(),
                 r.getItems().stream().map(this::toItemResponse).toList(),
+                r.getSubItems().stream().map(this::toSubItemResponse).toList(),
                 r.getCreatedAt()
+        );
+    }
+
+    private RentalSubItemResponse toSubItemResponse(EquipmentRentalSubItem subItem) {
+        return new RentalSubItemResponse(
+                subItem.getId(),
+                subItem.getSubEquipment().getSubEquipmentId(),
+                subItem.getSubEquipment().getType(),
+                subItem.getSubEquipment().getEquipmentType(),
+                subItem.getSubEquipment().getCameraModel(),
+                subItem.getSubEquipment().getBrand(),
+                subItem.getBorrowedQuantity(),
+                subItem.getBaseAmount(),
+                subItem.getLatePenaltyAmount(),
+                subItem.getItemTotalAmount()
         );
     }
 
@@ -159,7 +177,6 @@ public class EquipmentRentalController {
                 item.getMainEquipment().getBrand(),
                 item.getMainEquipment().getModel(),
                 item.getMainEquipment().getSerialNumber(),
-                item.getPricingCategory(),
                 item.getBaseAmount(),
                 item.getLatePenaltyAmount(),
                 item.getItemTotalAmount()

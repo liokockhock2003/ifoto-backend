@@ -11,7 +11,8 @@ public record RentalRequest(
         List<Long> equipmentIds,
         LocalDate startDate,
         LocalDate endDate,
-        String notes
+        String notes,
+        List<SubEquipmentEntry> subEquipmentEntries
 ) implements DateRangeValidatable {
 
     @Override

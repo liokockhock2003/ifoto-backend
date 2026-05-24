@@ -1,25 +1,16 @@
 package com.ifoto.ifoto_backend.controller;
 
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentListResponse;
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentRequest;
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentResponse;
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentableEquipmentResponse;
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentRequest;
-import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentResponse;
-import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.*;
 import com.ifoto.ifoto_backend.service.EquipmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/equipment")
@@ -31,25 +22,18 @@ public class EquipmentController {
     // ── Read ──────────────────────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<EquipmentListResponse> getAllEquipment() {
-        return ResponseEntity.ok(equipmentService.getAllEquipment());
+    public ResponseEntity<EquipmentListResponse> getAllEquipment(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(equipmentService.getAllEquipment(startDate, endDate));
     }
 
-    @GetMapping("/rentable")
-    public ResponseEntity<List<RentableEquipmentResponse>> getRentableEquipment(Authentication auth) {
-        if (auth == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
-        }
-        return ResponseEntity.ok(equipmentService.getRentableEquipment(resolveMemberType(auth)));
-    }
-
-    private MemberType resolveMemberType(Authentication auth) {
-        Set<String> roles = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
-        if (roles.contains("ROLE_NON_STUDENT")) return MemberType.NON_STUDENT;
-        if (roles.contains("ROLE_STUDENT"))     return MemberType.STUDENT;
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No membership role assigned");
+    @GetMapping("/available")
+    public ResponseEntity<EquipmentListResponse> getAvailableEquipment(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam String context) {
+        return ResponseEntity.ok(equipmentService.getAvailableEquipment(startDate, endDate, context));
     }
 
     // ── Main Equipment ────────────────────────────────────────────────────────
@@ -74,6 +58,38 @@ public class EquipmentController {
         return ResponseEntity.noContent().build();
     }
 
+    // ── Main Equipment Status ─────────────────────────────────────────────────
+
+    @PostMapping("/main/{id}/statuses")
+    public ResponseEntity<MainEquipmentStatusResponse> addMainEquipmentStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody MainEquipmentStatusRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(equipmentService.addMainEquipmentStatus(id, request));
+    }
+
+    @GetMapping("/main/{id}/statuses")
+    public ResponseEntity<List<MainEquipmentStatusResponse>> getMainEquipmentStatuses(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(equipmentService.getMainEquipmentStatuses(id));
+    }
+
+    @PutMapping("/main/{id}/statuses/{statusId}")
+    public ResponseEntity<MainEquipmentStatusResponse> updateMainEquipmentStatus(
+            @PathVariable Long id,
+            @PathVariable Long statusId,
+            @Valid @RequestBody MainEquipmentStatusRequest request) {
+        return ResponseEntity.ok(equipmentService.updateMainEquipmentStatus(id, statusId, request));
+    }
+
+    @DeleteMapping("/main/{id}/statuses/{statusId}")
+    public ResponseEntity<Void> deleteMainEquipmentStatus(
+            @PathVariable Long id,
+            @PathVariable Long statusId) {
+        equipmentService.deleteMainEquipmentStatus(id, statusId);
+        return ResponseEntity.noContent().build();
+    }
+
     // ── Sub Equipment ─────────────────────────────────────────────────────────
 
     @PostMapping("/sub")
@@ -93,6 +109,38 @@ public class EquipmentController {
     @DeleteMapping("/sub/{id}")
     public ResponseEntity<Void> deleteSubEquipment(@PathVariable Long id) {
         equipmentService.deleteSubEquipment(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Sub Equipment Quantity Holds ──────────────────────────────────────────
+
+    @PostMapping("/sub/{id}/quantity-holds")
+    public ResponseEntity<SubEquipmentQuantityHoldResponse> addQuantityHold(
+            @PathVariable Long id,
+            @Valid @RequestBody SubEquipmentQuantityHoldRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(equipmentService.addQuantityHold(id, request));
+    }
+
+    @GetMapping("/sub/{id}/quantity-holds")
+    public ResponseEntity<List<SubEquipmentQuantityHoldResponse>> getQuantityHolds(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(equipmentService.getQuantityHolds(id));
+    }
+
+    @PutMapping("/sub/{id}/quantity-holds/{holdId}")
+    public ResponseEntity<SubEquipmentQuantityHoldResponse> updateQuantityHold(
+            @PathVariable Long id,
+            @PathVariable Long holdId,
+            @Valid @RequestBody SubEquipmentQuantityHoldRequest request) {
+        return ResponseEntity.ok(equipmentService.updateQuantityHold(id, holdId, request));
+    }
+
+    @DeleteMapping("/sub/{id}/quantity-holds/{holdId}")
+    public ResponseEntity<Void> deleteQuantityHold(
+            @PathVariable Long id,
+            @PathVariable Long holdId) {
+        equipmentService.deleteQuantityHold(id, holdId);
         return ResponseEntity.noContent().build();
     }
 }

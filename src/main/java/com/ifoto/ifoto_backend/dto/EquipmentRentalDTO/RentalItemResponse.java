@@ -7,7 +7,6 @@ public record RentalItemResponse(
         String brand,
         String model,
         String serialNumber,
-        String pricingCategory,
         Long baseAmount,
         Long latePenaltyAmount,
         Long itemTotalAmount

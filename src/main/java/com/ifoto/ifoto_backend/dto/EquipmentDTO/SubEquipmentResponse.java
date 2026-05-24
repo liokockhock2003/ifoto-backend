@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+
 import java.util.List;
 
 public record SubEquipmentResponse(
@@ -10,7 +12,12 @@ public record SubEquipmentResponse(
         String brand,
         int capacity,
         int totalQuantity,
-        int usedQuantity,
+        int committedQuantity,
+        int adminHeldQuantity,
         int availableQuantity,
-        String notes
+        String notes,
+        Long pricingCategoryId,
+        RentalPricingCategory pricingCategoryName,
+        boolean isForRent,
+        List<SubEquipmentQuantityHoldResponse> quantityHolds
 ) {}

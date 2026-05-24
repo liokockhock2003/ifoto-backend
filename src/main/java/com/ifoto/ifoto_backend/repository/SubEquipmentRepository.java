@@ -6,7 +6,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface SubEquipmentRepository extends JpaRepository<SubEquipment, Long> {
+
+    List<SubEquipment> findByIsForRentTrue();
 
     @Modifying
     @Query("DELETE FROM SubEquipment e WHERE e.subEquipmentId = :id")

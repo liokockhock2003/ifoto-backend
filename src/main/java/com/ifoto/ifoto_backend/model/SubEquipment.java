@@ -41,25 +41,17 @@ public class SubEquipment {
     @Column(name = "total_quantity", nullable = false)
     private int totalQuantity;
 
-    @Column(name = "used_quantity", nullable = false)
-    private int usedQuantity;
-
-    @Column(name = "available_quantity", nullable = false)
-    private int availableQuantity;
-
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @PrePersist
-    @PreUpdate
-    private void validateQuantities() {
-        if (usedQuantity > totalQuantity) {
-            throw new IllegalStateException(
-                    "usedQuantity (" + usedQuantity + ") cannot exceed totalQuantity (" + totalQuantity + ")");
-        }
-        if (usedQuantity + availableQuantity != totalQuantity) {
-            throw new IllegalStateException(
-                    "usedQuantity + availableQuantity must equal totalQuantity");
-        }
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pricing_category_id")
+    private RentalCategory pricingCategory;
+
+    @Column(name = "is_for_rent")
+    private boolean isForRent;
+
+    @OneToMany(mappedBy = "subEquipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<SubEquipmentQuantityHold> quantityHolds = new ArrayList<>();
 }

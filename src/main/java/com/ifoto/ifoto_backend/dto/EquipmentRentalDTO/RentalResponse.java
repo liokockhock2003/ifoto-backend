@@ -23,5 +23,6 @@ public record RentalResponse(
         String committeeNotes,
         String renterNotes,
         List<RentalItemResponse> items,
+        List<RentalSubItemResponse> subItems,
         LocalDateTime createdAt
 ) {}

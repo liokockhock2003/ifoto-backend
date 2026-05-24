@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.dto.EquipmentRentalDTO.SubEquipmentEntry;
 import com.ifoto.ifoto_backend.model.*;
 import com.ifoto.ifoto_backend.model.enumerator.*;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
@@ -32,7 +33,11 @@ public class EquipmentRentalService {
 
     private final EquipmentRentalRepository rentalRepository;
     private final EquipmentRentalItemRepository rentalItemRepository;
+    private final EquipmentRentalSubItemRepository rentalSubItemRepository;
+    private final SubEquipmentRepository subEquipmentRepository;
     private final MainEquipmentRepository mainEquipmentRepository;
+    private final MainEquipmentStatusRepository mainEquipmentStatusRepository;
+    private final SubEquipmentQuantityHoldRepository subEquipmentQuantityHoldRepository;
     private final RentalPricingRepository pricingRepository;
     private final RentalPricingService rentalPricingService;
     private final UserRepository userRepository;
@@ -52,7 +57,7 @@ public class EquipmentRentalService {
 
     @Transactional
     public EquipmentRental submitRental(List<Long> equipmentIds, LocalDate startDate, LocalDate endDate,
-            String renterNotes, String username) {
+            String renterNotes, String username, List<SubEquipmentEntry> subEquipmentEntries) {
         User renter = findUser(username);
         MemberType memberType = resolveMemberType(renter);
 
@@ -68,6 +73,12 @@ public class EquipmentRentalService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Equipment '" + eq.getBrand() + " " + eq.getModel() + " (" + eq.getSerialNumber()
                                 + ")' is already booked for the requested dates");
+            }
+            if (mainEquipmentStatusRepository.existsConflictingStatus(
+                    eq.getMainEquipmentId(), startDate, endDate)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Equipment '" + eq.getSerialNumber()
+                                + "' is under an admin hold for the requested dates");
             }
         }
 
@@ -91,6 +102,13 @@ public class EquipmentRentalService {
         rental.setTotalPenaltyAmount(0L);
         rental.setTotalAmount(totalBase);
         rental = rentalRepository.save(rental);
+
+        if (subEquipmentEntries != null && !subEquipmentEntries.isEmpty()) {
+            long subTotal = buildAndSaveSubItems(rental, subEquipmentEntries, memberType, requestedDays, startDate, endDate);
+            rental.setTotalBaseAmount(rental.getTotalBaseAmount() + subTotal);
+            rental.setTotalAmount(rental.getTotalBaseAmount());
+            rental = rentalRepository.save(rental);
+        }
 
         List<String> committeeEmails = userRepository.findAllByRoleName("ROLE_EQUIPMENT_COMMITTEE")
                 .stream().map(User::getEmail).toList();
@@ -152,6 +170,12 @@ public class EquipmentRentalService {
                         "Equipment '" + eq.getBrand() + " " + eq.getModel() + " (" + eq.getSerialNumber()
                                 + ")' conflicts with an existing approved rental");
             }
+            if (mainEquipmentStatusRepository.existsConflictingStatus(
+                    eq.getMainEquipmentId(), approvedStart, approvedEnd)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Equipment '" + eq.getSerialNumber()
+                                + "' is under an admin hold for the approved dates");
+            }
         }
 
         int durationDays = (int) (approvedEnd.toEpochDay() - approvedStart.toEpochDay() + 1);
@@ -162,7 +186,8 @@ public class EquipmentRentalService {
         List<EquipmentRentalItem> items = buildItems(rental, equipmentList, memberType, durationDays);
         rental.getItems().addAll(items);
 
-        long totalBase = items.stream().mapToLong(EquipmentRentalItem::getBaseAmount).sum();
+        long subBase = rental.getSubItems().stream().mapToLong(EquipmentRentalSubItem::getBaseAmount).sum();
+        long totalBase = items.stream().mapToLong(EquipmentRentalItem::getBaseAmount).sum() + subBase;
         rental.setTotalBaseAmount(totalBase);
         rental.setTotalPenaltyAmount(0L);
         rental.setTotalAmount(totalBase);
@@ -266,6 +291,12 @@ public class EquipmentRentalService {
             item.setItemTotalAmount(item.getBaseAmount() + penalty);
             totalPenalty += penalty;
         }
+        for (EquipmentRentalSubItem subItem : rental.getSubItems()) {
+            long penalty = subItem.getLatePenaltyPerDay() * overdueDays;
+            subItem.setLatePenaltyAmount(penalty);
+            subItem.setItemTotalAmount(subItem.getBaseAmount() + penalty);
+            totalPenalty += penalty;
+        }
 
         rental.setTotalPenaltyAmount(totalPenalty);
         rental.setTotalAmount(rental.getTotalBaseAmount() + totalPenalty);
@@ -362,20 +393,12 @@ public class EquipmentRentalService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                             "No pricing found for category " + cat + " and member type " + memberType));
 
-            long rate1Day = toC(pricing.getRate1Day());
-            long rate3Days = toC(pricing.getRate3Days());
-            long rateExtra = toC(pricing.getRatePerDayExtra());
             long latePenalty = toC(pricing.getLatePenaltyPerDay());
             long baseAmount = toC(rentalPricingService.calculateCost(pricing, durationDays));
 
             items.add(EquipmentRentalItem.builder()
                     .equipmentRental(rental)
                     .mainEquipment(eq)
-                    .memberType(memberType)
-                    .pricingCategory(cat.name())
-                    .rate1Day(rate1Day)
-                    .rate3Days(rate3Days)
-                    .ratePerDayExtra(rateExtra)
                     .latePenaltyPerDay(latePenalty)
                     .baseAmount(baseAmount)
                     .latePenaltyAmount(0L)
@@ -388,5 +411,61 @@ public class EquipmentRentalService {
     private long toC(BigDecimal rm) {
         return rm.multiply(BigDecimal.valueOf(100)).longValue();
     }
+
+    private long buildAndSaveSubItems(EquipmentRental rental, List<SubEquipmentEntry> entries,
+            MemberType memberType, int durationDays, LocalDate startDate, LocalDate endDate) {
+        List<EquipmentRentalSubItem> subItems = new ArrayList<>();
+        long subTotal = 0L;
+        List<RentalStatus> blockingStatuses = List.of(
+                RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
+                RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE);
+        for (SubEquipmentEntry entry : entries) {
+            SubEquipment sub = subEquipmentRepository.findById(entry.subEquipmentId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Sub-equipment not found: " + entry.subEquipmentId()));
+            if (entry.quantity() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Quantity must be at least 1 for sub-equipment: " + entry.subEquipmentId());
+            }
+            int committed = rentalSubItemRepository.sumCommittedQuantity(
+                    sub.getSubEquipmentId(), startDate, endDate, blockingStatuses);
+            int held = subEquipmentQuantityHoldRepository.sumHeldQuantity(
+                    sub.getSubEquipmentId(), startDate, endDate, 0L);
+            if (committed + held + entry.quantity() > sub.getTotalQuantity()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Insufficient quantity for '" + sub.getType() + " " + sub.getBrand()
+                                + "' for the requested dates: requested " + entry.quantity()
+                                + ", available " + (sub.getTotalQuantity() - committed - held));
+            }
+            long latePenalty = 0L;
+            long baseAmount = 0L;
+            if (sub.getPricingCategory() != null) {
+                RentalPricingCategory cat = sub.getPricingCategory().getName();
+                RentalPricing pricing = pricingRepository
+                        .findByPricingCategory_NameAndMemberType(cat, memberType)
+                        .orElse(null);
+                if (pricing != null) {
+                    latePenalty = toC(pricing.getLatePenaltyPerDay()) * entry.quantity();
+                    baseAmount = toC(rentalPricingService.calculateCost(pricing, durationDays))
+                            * entry.quantity();
+                }
+            }
+            subTotal += baseAmount;
+
+            subItems.add(EquipmentRentalSubItem.builder()
+                    .equipmentRental(rental)
+                    .subEquipment(sub)
+                    .borrowedQuantity(entry.quantity())
+                    .latePenaltyPerDay(latePenalty)
+                    .baseAmount(baseAmount)
+                    .latePenaltyAmount(0L)
+                    .itemTotalAmount(baseAmount)
+                    .build());
+        }
+        rentalSubItemRepository.saveAll(subItems);
+        rental.getSubItems().addAll(subItems);
+        return subTotal;
+    }
+
 
 }

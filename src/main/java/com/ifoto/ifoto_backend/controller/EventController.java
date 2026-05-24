@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,22 +28,11 @@ public class EventController {
         return ResponseEntity.ok(eventService.getAllEvents());
     }
 
-    @GetMapping("/committee/{userId}")
-    public ResponseEntity<List<EventResponse>> getEventsByCommitteeMember(
-            @PathVariable Long userId,
+    @GetMapping("/my")
+    public ResponseEntity<List<EventResponse>> getMyEvents(
             @AuthenticationPrincipal UserDetails principal) {
-        User authenticatedUser = userService.getByUsername(principal.getUsername());
-        boolean isHighCommittee = authenticatedUser.getRoles().stream()
-                .anyMatch(r -> r.getName().equals("ROLE_HIGH_COMMITTEE"));
-        if (!isHighCommittee && !authenticatedUser.getId().equals(userId)) {
-            throw new AccessDeniedException("You can only view your own assigned events");
-        }
-        return ResponseEntity.ok(eventService.getEventsByCommitteeMember(userId));
-    }
-
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<List<EventResponse>> getEventsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(eventService.getEventsByCommitteeMember(userId));
+        User me = userService.getByUsername(principal.getUsername());
+        return ResponseEntity.ok(eventService.getEventsByCommitteeMember(me.getId()));
     }
 
     @PostMapping

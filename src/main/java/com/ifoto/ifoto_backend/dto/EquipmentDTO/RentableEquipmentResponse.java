@@ -23,5 +23,6 @@ public record RentableEquipmentResponse(
         BigDecimal rate3Days,
         BigDecimal ratePerDayExtra,
         BigDecimal latePenaltyPerDay,
-        List<BookedDateRange> bookedDates
+        List<BookedDateRange> bookedDates,
+        List<MainEquipmentStatusResponse> adminStatuses
 ) {}
