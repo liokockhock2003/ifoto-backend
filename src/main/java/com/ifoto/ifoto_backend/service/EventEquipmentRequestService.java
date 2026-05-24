@@ -247,7 +247,12 @@ public class EventEquipmentRequestService {
         int clampedSize = Math.min(Math.max(size, 1), 100);
         Pageable pageable = PageRequest.of(clampedPage, clampedSize);
         String s = (search == null) ? "" : search.trim();
-        String st = (status == null) ? "" : status.trim();
+        EventEquipmentRequestStatus st = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                st = EventEquipmentRequestStatus.valueOf(status.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
         return requestRepository.searchRequests(s, st, pageable);
     }
 

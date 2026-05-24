@@ -22,7 +22,7 @@ public interface EventEquipmentRequestRepository extends JpaRepository<EventEqui
             SELECT r FROM EventEquipmentRequest r
             LEFT JOIN r.requestedBy u
             LEFT JOIN r.event e
-            WHERE (:status IS NULL OR :status = '' OR CAST(r.status AS string) = :status)
+            WHERE (:status IS NULL OR r.status = :status)
               AND (:search IS NULL OR :search = ''
                    OR LOWER(r.requestNumber) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -32,7 +32,7 @@ public interface EventEquipmentRequestRepository extends JpaRepository<EventEqui
             """)
     Page<EventEquipmentRequest> searchRequests(
             @Param("search") String search,
-            @Param("status") String status,
+            @Param("status") EventEquipmentRequestStatus status,
             Pageable pageable);
 
     List<EventEquipmentRequest> findByStatusAndApprovedStartDateLessThanEqual(

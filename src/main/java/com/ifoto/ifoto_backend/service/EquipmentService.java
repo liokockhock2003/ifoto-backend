@@ -29,10 +29,6 @@ public class EquipmentService {
     private final MainEquipmentStatusRepository mainEquipmentStatusRepository;
     private final SubEquipmentQuantityHoldRepository subEquipmentQuantityHoldRepository;
 
-    private static final List<RentalStatus> BLOCKING_STATUSES = List.of(
-            RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
-            RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE);
-
     private static final List<RentalStatus> RENTAL_BLOCKING = List.of(
             RentalStatus.APPROVED, RentalStatus.PENDING_PAYMENT,
             RentalStatus.PAID, RentalStatus.ACTIVE, RentalStatus.OVERDUE);
@@ -69,7 +65,7 @@ public class EquipmentService {
         Map<Long, Integer> holdMap = Map.of();
         if (startDate != null && endDate != null) {
             committedMap = equipmentRentalSubItemRepository
-                    .sumCommittedQuantityPerSubEquipment(startDate, endDate, BLOCKING_STATUSES)
+                    .sumCommittedQuantityPerSubEquipment(startDate, endDate, RENTAL_BLOCKING)
                     .stream()
                     .collect(Collectors.toMap(
                             row -> (Long) row[0],
@@ -408,7 +404,7 @@ public class EquipmentService {
                 e.getTotalQuantity(),
                 committed,
                 held,
-                e.getTotalQuantity() - committed - held,
+                Math.max(0, e.getTotalQuantity() - committed - held),
                 e.getNotes(),
                 pc != null ? pc.getId() : null,
                 pc != null ? pc.getName() : null,
