@@ -103,6 +103,10 @@ public class EquipmentRental {
     @Builder.Default
     private List<EquipmentRentalItem> items = new ArrayList<>();
 
+    @OneToMany(mappedBy = "equipmentRental", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<EquipmentRentalSubItem> subItems = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

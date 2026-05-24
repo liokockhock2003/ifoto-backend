@@ -3,6 +3,9 @@ package com.ifoto.ifoto_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "main_equipment")
 @Getter
@@ -47,4 +50,8 @@ public class MainEquipment {
 
     @Column(name = "is_for_rent", nullable = false)
     private boolean isForRent;
+
+    @OneToMany(mappedBy = "mainEquipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<MainEquipmentStatus> dateStatuses = new ArrayList<>();
 }

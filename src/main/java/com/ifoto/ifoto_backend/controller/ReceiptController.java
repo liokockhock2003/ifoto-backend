@@ -71,7 +71,6 @@ public class ReceiptController {
                 item.getMainEquipment().getBrand(),
                 item.getMainEquipment().getModel(),
                 item.getMainEquipment().getSerialNumber(),
-                item.getPricingCategory(),
                 item.getBaseAmount(),
                 item.getLatePenaltyAmount(),
                 item.getItemTotalAmount()

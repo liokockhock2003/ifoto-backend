@@ -5,7 +5,6 @@ public record ReceiptItemResponse(
         String brand,
         String model,
         String serialNumber,
-        String pricingCategory,
         Long rateApplied,
         Long latePenalty,
         Long itemTotal

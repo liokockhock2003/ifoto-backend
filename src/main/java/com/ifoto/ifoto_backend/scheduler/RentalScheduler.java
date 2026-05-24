@@ -1,8 +1,11 @@
 package com.ifoto.ifoto_backend.scheduler;
 
 import com.ifoto.ifoto_backend.model.EquipmentRental;
+import com.ifoto.ifoto_backend.model.EventEquipmentRequest;
+import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import com.ifoto.ifoto_backend.repository.EquipmentRentalRepository;
+import com.ifoto.ifoto_backend.repository.EventEquipmentRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +22,7 @@ import java.util.List;
 public class RentalScheduler {
 
     private final EquipmentRentalRepository rentalRepository;
+    private final EventEquipmentRequestRepository eventRequestRepository;
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
@@ -62,5 +66,20 @@ public class RentalScheduler {
         rentalRepository.saveAll(alreadyOverdue);
         log.info("Marked {} new OVERDUE, recalculated penalty for {} existing OVERDUE rental(s)",
                 newlyOverdue.size(), alreadyOverdue.size());
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void markActiveEventRequests() {
+        List<EventEquipmentRequest> active = eventRequestRepository
+                .findByStatusAndApprovedStartDateLessThanEqual(
+                        EventEquipmentRequestStatus.APPROVED, LocalDate.now());
+        if (active.isEmpty()) return;
+        active.forEach(r -> {
+            r.setStatus(EventEquipmentRequestStatus.ACTIVE);
+            r.setActiveAt(LocalDateTime.now());
+        });
+        eventRequestRepository.saveAll(active);
+        log.info("Marked {} event equipment request(s) as ACTIVE", active.size());
     }
 }
