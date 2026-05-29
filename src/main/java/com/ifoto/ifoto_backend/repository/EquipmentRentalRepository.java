@@ -47,6 +47,8 @@ public interface EquipmentRentalRepository extends JpaRepository<EquipmentRental
 
     long countByStatus(RentalStatus status);
 
+    long countByPaymentStatus(RentalPaymentStatus paymentStatus);
+
     @Query("SELECT COUNT(r) FROM EquipmentRental r WHERE r.createdAt >= :from AND r.createdAt < :to")
     long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 

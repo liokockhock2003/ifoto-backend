@@ -52,10 +52,15 @@ public class ReportingService {
     }
 
     @Transactional(readOnly = true)
-    public List<StatusBreakdownItem> rentalStatusBreakdown() {
-        return rentalRepository.countGroupedByStatus().stream()
-                .map(p -> new StatusBreakdownItem(p.getStatus().name(), p.getCount()))
-                .toList();
+    public RentalStatusSummary rentalStatusBreakdown() {
+        return new RentalStatusSummary(
+                rentalRepository.countByStatus(RentalStatus.APPROVED),
+                rentalRepository.countByStatus(RentalStatus.PAID),
+                rentalRepository.countByStatus(RentalStatus.ACTIVE),
+                rentalRepository.countByStatus(RentalStatus.OVERDUE),
+                rentalRepository.countByPaymentStatus(RentalPaymentStatus.PENALTY_PAID),
+                rentalRepository.countByStatus(RentalStatus.RETURNED)
+        );
     }
 
     @Transactional(readOnly = true)

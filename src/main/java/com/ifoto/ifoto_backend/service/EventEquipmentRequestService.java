@@ -92,8 +92,8 @@ public class EventEquipmentRequestService {
     // ── Review (approve / reject) ─────────────────────────────────────────────
 
     @Transactional
-    public EventEquipmentRequest reviewRequest(Long id, String action, LocalDate approvedStart,
-            LocalDate approvedEnd, List<Long> equipmentIds,
+    public EventEquipmentRequest reviewRequest(Long id, String action,
+            List<Long> equipmentIds,
             List<EquipmentRequestSubItemRequest> subEquipmentEntries,
             String rejectionReason, String committeeNotes, String username) {
         User committee = findUser(username);
@@ -116,14 +116,8 @@ public class EventEquipmentRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action must be APPROVE or REJECT");
         }
 
-        if (approvedStart == null || approvedEnd == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "approvedStartDate and approvedEndDate are required for approval");
-        }
-        if (!approvedEnd.isAfter(approvedStart) && !approvedEnd.isEqual(approvedStart)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "approvedEndDate must be on or after approvedStartDate");
-        }
+        LocalDate approvedStart = request.getRequestedStartDate();
+        LocalDate approvedEnd = request.getRequestedEndDate();
 
         List<Long> finalEquipmentIds = (equipmentIds != null && !equipmentIds.isEmpty())
                 ? equipmentIds

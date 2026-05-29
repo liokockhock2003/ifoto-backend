@@ -57,6 +57,19 @@ public interface EquipmentRentalItemRepository extends JpaRepository<EquipmentRe
                         @Param("pendingStatus") RentalStatus pendingStatus);
 
         @Query("""
+                        SELECT DISTINCT eri.mainEquipment.mainEquipmentId
+                        FROM EquipmentRentalItem eri JOIN eri.equipmentRental er
+                        WHERE eri.mainEquipment.mainEquipmentId IN :ids
+                        AND er.status IN :statuses
+                        AND :today <= er.approvedEndDate
+                        AND :today >= er.approvedStartDate
+                        """)
+        List<Long> findBookedEquipmentIds(
+                        @Param("ids") List<Long> ids,
+                        @Param("today") LocalDate today,
+                        @Param("statuses") Collection<RentalStatus> statuses);
+
+        @Query("""
                         SELECT i.mainEquipment.mainEquipmentId AS equipmentId,
                                i.mainEquipment.brand            AS brand,
                                i.mainEquipment.model            AS model,

@@ -26,4 +26,17 @@ public interface EventEquipmentRequestItemRepository extends JpaRepository<Event
             @Param("statuses") List<EventEquipmentRequestStatus> statuses,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            SELECT DISTINCT i.mainEquipment.mainEquipmentId
+            FROM EventEquipmentRequestItem i JOIN i.eventEquipmentRequest r
+            WHERE i.mainEquipment.mainEquipmentId IN :ids
+            AND r.status IN :statuses
+            AND :today <= r.approvedEndDate
+            AND :today >= r.approvedStartDate
+            """)
+    List<Long> findBookedEquipmentIds(
+            @Param("ids") List<Long> ids,
+            @Param("today") LocalDate today,
+            @Param("statuses") List<EventEquipmentRequestStatus> statuses);
 }

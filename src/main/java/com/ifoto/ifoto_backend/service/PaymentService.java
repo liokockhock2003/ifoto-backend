@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -66,12 +67,19 @@ public class PaymentService {
                 rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
             } else {
                 log.info("Normal payment confirmed for rental {}, setting PAID", rental.getRentalNumber());
-                rental.setStatus(RentalStatus.PAID);
                 rental.setPaidAt(LocalDateTime.now());
                 rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PAID);
+                if (rental.getApprovedStartDate() != null && !rental.getApprovedStartDate().isAfter(LocalDate.now())) {
+                    rental.setStatus(RentalStatus.ACTIVE);
+                    rental.setActiveAt(LocalDateTime.now());
+                } else {
+                    rental.setStatus(RentalStatus.PAID);
+                }
             }
 
-            Receipt receipt = receiptService.createReceipt(rental, payment);
+            Receipt receipt = isPenalty
+                    ? receiptService.createOverdueReceipt(rental, payment)
+                    : receiptService.createReceipt(rental, payment);
             mailService.sendPaymentConfirmedToRenter(
                     rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
 
@@ -123,12 +131,19 @@ public class PaymentService {
             rental.setStatus(RentalStatus.RETURNED);
             rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
         } else {
-            rental.setStatus(RentalStatus.PAID);
             rental.setPaidAt(LocalDateTime.now());
             rental.setPaymentStatus(RentalPaymentStatus.CASH_PAID);
+            if (rental.getApprovedStartDate() != null && !rental.getApprovedStartDate().isAfter(LocalDate.now())) {
+                rental.setStatus(RentalStatus.ACTIVE);
+                rental.setActiveAt(LocalDateTime.now());
+            } else {
+                rental.setStatus(RentalStatus.PAID);
+            }
         }
 
-        Receipt receipt = receiptService.createReceipt(rental, payment);
+        Receipt receipt = isPenalty
+                ? receiptService.createOverdueReceipt(rental, payment)
+                : receiptService.createReceipt(rental, payment);
         mailService.sendPaymentConfirmedToRenter(
                 rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
     }

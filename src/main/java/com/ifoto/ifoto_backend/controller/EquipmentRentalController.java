@@ -95,7 +95,7 @@ public class EquipmentRentalController {
             @Valid @RequestBody RentalReviewRequest req,
             Authentication auth) {
         EquipmentRental rental = rentalService.reviewRental(
-                id, req.action(), req.approvedStartDate(), req.approvedEndDate(),
+                id, req.action(),
                 req.equipmentIds(), req.rejectionReason(), req.committeeNotes(), auth.getName());
         return ResponseEntity.ok(toResponse(rental));
     }

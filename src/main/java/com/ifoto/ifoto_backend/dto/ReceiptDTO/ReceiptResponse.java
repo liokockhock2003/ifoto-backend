@@ -11,7 +11,7 @@ public record ReceiptResponse(
         RentalInfo rental,
         PaymentInfo payment
 ) {
-    public record RenterInfo(String username, String fullName, String email) {}
+    public record RenterInfo(String username, String fullName, String email, String phoneNumber) {}
 
     public record RentalInfo(
             String rentalNumber,
@@ -21,7 +21,8 @@ public record ReceiptResponse(
             Long totalBaseAmount,
             Long totalPenaltyAmount,
             Long totalAmount,
-            List<ReceiptItemResponse> items
+            List<ReceiptItemResponse> items,
+            List<ReceiptSubItemResponse> subItems
     ) {}
 
     public record PaymentInfo(

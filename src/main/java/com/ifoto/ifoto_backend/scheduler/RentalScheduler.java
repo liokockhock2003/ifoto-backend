@@ -6,6 +6,8 @@ import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import com.ifoto.ifoto_backend.repository.EquipmentRentalRepository;
 import com.ifoto.ifoto_backend.repository.EventEquipmentRequestRepository;
+import com.ifoto.ifoto_backend.service.EquipmentRentalService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +25,7 @@ public class RentalScheduler {
 
     private final EquipmentRentalRepository rentalRepository;
     private final EventEquipmentRequestRepository eventRequestRepository;
+    private final EquipmentRentalService rentalService;
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
@@ -39,33 +42,8 @@ public class RentalScheduler {
     }
 
     @Scheduled(cron = "0 0 0 * * *")
-    @Transactional
     public void markOverdueRentals() {
-        LocalDate today = LocalDate.now();
-
-        List<EquipmentRental> newlyOverdue = rentalRepository
-                .findByStatusAndDueReturnDateBefore(RentalStatus.ACTIVE, today);
-        newlyOverdue.forEach(r -> r.setStatus(RentalStatus.OVERDUE));
-
-        List<EquipmentRental> alreadyOverdue = rentalRepository.findByStatus(RentalStatus.OVERDUE);
-
-        for (EquipmentRental r : alreadyOverdue) {
-            long days = today.toEpochDay() - r.getDueReturnDate().toEpochDay();
-            long total = 0L;
-            for (var item : r.getItems()) {
-                long penalty = item.getLatePenaltyPerDay() * days;
-                item.setLatePenaltyAmount(penalty);
-                item.setItemTotalAmount(item.getBaseAmount() + penalty);
-                total += penalty;
-            }
-            r.setTotalPenaltyAmount(total);
-            r.setTotalAmount(r.getTotalBaseAmount() + total);
-        }
-
-        rentalRepository.saveAll(newlyOverdue);
-        rentalRepository.saveAll(alreadyOverdue);
-        log.info("Marked {} new OVERDUE, recalculated penalty for {} existing OVERDUE rental(s)",
-                newlyOverdue.size(), alreadyOverdue.size());
+        rentalService.updateOverduePenalties();
     }
 
     @Scheduled(cron = "0 0 0 * * *")

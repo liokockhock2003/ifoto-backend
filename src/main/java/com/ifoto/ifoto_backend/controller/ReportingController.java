@@ -21,7 +21,7 @@ public class ReportingController {
     }
 
     @GetMapping("/rental-status")
-    public ResponseEntity<List<StatusBreakdownItem>> rentalStatus() {
+    public ResponseEntity<RentalStatusSummary> rentalStatus() {
         return ResponseEntity.ok(reportingService.rentalStatusBreakdown());
     }
 

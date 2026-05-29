@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.model;
 
+import com.ifoto.ifoto_backend.model.enumerator.DocumentType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,9 +26,13 @@ public class Receipt {
     @JoinColumn(name = "equipment_rental_id", nullable = false)
     private EquipmentRental equipmentRental;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "payment_id", nullable = true, unique = true)
     private Payment payment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false, length = 20)
+    private DocumentType documentType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
