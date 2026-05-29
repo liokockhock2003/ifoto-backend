@@ -22,10 +22,8 @@ public class EquipmentController {
     // ── Read ──────────────────────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<EquipmentListResponse> getAllEquipment(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return ResponseEntity.ok(equipmentService.getAllEquipment(startDate, endDate));
+    public ResponseEntity<EquipmentListResponse> getAllEquipment() {
+        return ResponseEntity.ok(equipmentService.getAllEquipment());
     }
 
     @GetMapping("/available")

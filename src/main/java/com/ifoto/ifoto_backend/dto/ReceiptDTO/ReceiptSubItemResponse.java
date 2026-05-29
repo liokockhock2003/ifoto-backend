@@ -1,10 +1,10 @@
 package com.ifoto.ifoto_backend.dto.ReceiptDTO;
 
-public record ReceiptItemResponse(
+public record ReceiptSubItemResponse(
+        String type,
         String equipmentType,
         String brand,
-        String model,
-        String serialNumber,
+        int borrowedQuantity,
         Long baseAmount,
         Long penaltyAmount,
         Long itemTotal

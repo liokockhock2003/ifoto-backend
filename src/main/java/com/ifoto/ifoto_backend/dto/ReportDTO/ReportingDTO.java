@@ -12,6 +12,15 @@ public class ReportingDTO {
 
     public record StatusBreakdownItem(String status, long count) {}
 
+    public record RentalStatusSummary(
+            long approved,
+            long paid,
+            long active,
+            long overdue,
+            long paidOverdue,
+            long returned
+    ) {}
+
     public record RentalVolumeItem(String month, long count) {}
 
     public record RevenueItem(String month, BigDecimal baseAmount, BigDecimal penaltyAmount) {}

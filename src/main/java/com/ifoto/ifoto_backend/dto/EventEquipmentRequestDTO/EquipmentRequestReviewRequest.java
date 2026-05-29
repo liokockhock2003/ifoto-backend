@@ -2,13 +2,10 @@ package com.ifoto.ifoto_backend.dto.EventEquipmentRequestDTO;
 
 import jakarta.validation.constraints.NotBlank;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public record EquipmentRequestReviewRequest(
         @NotBlank String action,
-        LocalDate approvedStartDate,
-        LocalDate approvedEndDate,
         List<Long> equipmentIds,
         List<EquipmentRequestSubItemRequest> subEquipmentEntries,
         String rejectionReason,

@@ -12,7 +12,7 @@ public record MainEquipmentResponse(
         String model,
         String serialNumber,
         String condition,
-        // String status,
+        String status,
         String notes,
         Long pricingCategoryId,
         RentalPricingCategory pricingCategory,

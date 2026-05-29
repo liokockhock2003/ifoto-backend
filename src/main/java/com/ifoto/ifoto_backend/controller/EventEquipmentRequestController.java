@@ -66,7 +66,7 @@ public class EventEquipmentRequestController {
             @Valid @RequestBody EquipmentRequestReviewRequest req,
             Authentication auth) {
         EventEquipmentRequest request = requestService.reviewRequest(
-                id, req.action(), req.approvedStartDate(), req.approvedEndDate(),
+                id, req.action(),
                 req.equipmentIds(), req.subEquipmentEntries(),
                 req.rejectionReason(), req.committeeNotes(), auth.getName());
         return ResponseEntity.ok(toResponse(request));

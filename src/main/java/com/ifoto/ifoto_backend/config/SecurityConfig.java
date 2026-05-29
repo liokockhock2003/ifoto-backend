@@ -83,8 +83,6 @@ public class SecurityConfig {
                         // Payment callback (public — Billplz server POSTs here)
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/callback").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/result").permitAll()
-                        // Receipt endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/v1/receipts/my").hasAnyRole("STUDENT", "NON_STUDENT")
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

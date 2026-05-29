@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,7 +26,9 @@ public class EquipmentService {
     private final SubEquipmentRepository subEquipmentRepository;
     private final RentalCategoryRepository rentalCategoryRepository;
     private final EquipmentRentalSubItemRepository equipmentRentalSubItemRepository;
+    private final EquipmentRentalItemRepository equipmentRentalItemRepository;
     private final EventEquipmentRequestSubItemRepository eventEquipmentRequestSubItemRepository;
+    private final EventEquipmentRequestItemRepository eventEquipmentRequestItemRepository;
     private final MainEquipmentStatusRepository mainEquipmentStatusRepository;
     private final SubEquipmentQuantityHoldRepository subEquipmentQuantityHoldRepository;
 
@@ -39,53 +42,73 @@ public class EquipmentService {
     // ── Read ──────────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public EquipmentListResponse getAllEquipment(LocalDate startDate, LocalDate endDate) {
-        List<MainEquipment> allMain = mainEquipmentRepository.findAll();
-        List<SubEquipment> allSub = subEquipmentRepository.findAll();
+    public EquipmentListResponse getAllEquipment() {
+        LocalDate today = LocalDate.now();
 
+        List<MainEquipment> allMain = mainEquipmentRepository.findAll();
         List<Long> mainIds = allMain.stream().map(MainEquipment::getMainEquipmentId).toList();
-        Map<Long, List<MainEquipmentStatusResponse>> statusMap = mainIds.isEmpty() ? Map.of() :
-                mainEquipmentStatusRepository.findUpcomingByEquipmentIds(mainIds, LocalDate.now())
-                        .stream().collect(Collectors.groupingBy(
+
+        Map<Long, MainEquipmentStatusType> activeStatusMap = mainIds.isEmpty() ? Map.of() :
+                mainEquipmentStatusRepository.findActiveByEquipmentIds(mainIds, today)
+                        .stream().collect(Collectors.toMap(
                                 s -> s.getMainEquipment().getMainEquipmentId(),
-                                Collectors.mapping(this::toStatusResponse, Collectors.toList())));
+                                MainEquipmentStatus::getStatusType,
+                                (a, b) -> a));
+
+        Set<Long> rentalBookedIds = mainIds.isEmpty() ? Set.of() :
+                new java.util.HashSet<>(equipmentRentalItemRepository
+                        .findBookedEquipmentIds(mainIds, today, RENTAL_BLOCKING));
+
+        Set<Long> eventBookedIds = mainIds.isEmpty() ? Set.of() :
+                new java.util.HashSet<>(eventEquipmentRequestItemRepository
+                        .findBookedEquipmentIds(mainIds, today, List.copyOf(EVENT_BLOCKING)));
 
         List<MainEquipmentResponse> mainList = allMain.stream()
-                .map(e -> toMainResponse(e, statusMap.getOrDefault(e.getMainEquipmentId(), List.of())))
+                .map(e -> {
+                    Long id = e.getMainEquipmentId();
+                    MainEquipmentStatusType effectiveStatus;
+                    if (activeStatusMap.containsKey(id)) {
+                        effectiveStatus = activeStatusMap.get(id);
+                    } else if (rentalBookedIds.contains(id) || eventBookedIds.contains(id)) {
+                        effectiveStatus = MainEquipmentStatusType.BOOKED;
+                    } else {
+                        effectiveStatus = MainEquipmentStatusType.AVAILABLE;
+                    }
+                    return toMainResponse(e, effectiveStatus, List.of());
+                })
                 .toList();
 
+        List<SubEquipment> allSub = subEquipmentRepository.findAll();
         List<Long> subIds = allSub.stream().map(SubEquipment::getSubEquipmentId).toList();
-        Map<Long, List<SubEquipmentQuantityHoldResponse>> holdListMap = subIds.isEmpty() ? Map.of() :
-                subEquipmentQuantityHoldRepository.findUpcomingBySubEquipmentIds(subIds, LocalDate.now())
-                        .stream().collect(Collectors.groupingBy(
-                                h -> h.getSubEquipment().getSubEquipmentId(),
-                                Collectors.mapping(this::toHoldResponse, Collectors.toList())));
 
-        Map<Long, Integer> committedMap = Map.of();
-        Map<Long, Integer> holdMap = Map.of();
-        if (startDate != null && endDate != null) {
-            committedMap = equipmentRentalSubItemRepository
-                    .sumCommittedQuantityPerSubEquipment(startDate, endDate, RENTAL_BLOCKING)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            row -> (Long) row[0],
-                            row -> ((Number) row[1]).intValue()));
+        Map<Long, Integer> rentalCommittedMap = subIds.isEmpty() ? Map.of() :
+                equipmentRentalSubItemRepository
+                        .sumCommittedQuantityPerSubEquipment(today, today, RENTAL_BLOCKING)
+                        .stream().collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> ((Number) row[1]).intValue()));
 
-            holdMap = subEquipmentQuantityHoldRepository
-                    .sumHeldQuantityPerSubEquipment(startDate, endDate)
-                    .stream()
-                    .collect(Collectors.toMap(
-                            row -> (Long) row[0],
-                            row -> ((Number) row[1]).intValue()));
-        }
+        Map<Long, Integer> eventCommittedMap = subIds.isEmpty() ? Map.of() :
+                eventEquipmentRequestSubItemRepository
+                        .sumCommittedQuantityPerSubEquipment(today, today, EVENT_BLOCKING)
+                        .stream().collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> ((Number) row[1]).intValue()));
 
-        final Map<Long, Integer> finalCommittedMap = committedMap;
-        final Map<Long, Integer> finalHoldMap = holdMap;
+        Map<Long, Integer> holdMap = subIds.isEmpty() ? Map.of() :
+                subEquipmentQuantityHoldRepository
+                        .sumHeldQuantityPerSubEquipment(today, today)
+                        .stream().collect(Collectors.toMap(
+                                row -> (Long) row[0],
+                                row -> ((Number) row[1]).intValue()));
+
         List<SubEquipmentResponse> subList = allSub.stream()
-                .map(s -> toSubResponse(s,
-                        finalCommittedMap.getOrDefault(s.getSubEquipmentId(), 0),
-                        finalHoldMap.getOrDefault(s.getSubEquipmentId(), 0),
-                        holdListMap.getOrDefault(s.getSubEquipmentId(), List.of())))
+                .map(s -> {
+                    int committed = rentalCommittedMap.getOrDefault(s.getSubEquipmentId(), 0)
+                            + eventCommittedMap.getOrDefault(s.getSubEquipmentId(), 0);
+                    int held = holdMap.getOrDefault(s.getSubEquipmentId(), 0);
+                    return toSubResponse(s, committed, held, List.of());
+                })
                 .toList();
 
         return new EquipmentListResponse(mainList, subList);
@@ -201,6 +224,20 @@ public class EquipmentService {
         MainEquipment equipment = mainEquipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Main equipment not found: " + equipmentId));
+        if (mainEquipmentStatusRepository.existsConflictingStatus(equipmentId, req.startDate(), req.endDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A status entry already exists that overlaps the requested date range");
+        }
+        if (equipmentRentalItemRepository.existsConflictingApprovedRental(
+                equipmentId, req.startDate(), req.endDate(), 0L, RENTAL_BLOCKING)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Equipment has an active rental booking in the requested date range");
+        }
+        if (eventEquipmentRequestItemRepository.existsConflictingRequest(
+                equipmentId, 0L, List.copyOf(EVENT_BLOCKING), req.startDate(), req.endDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Equipment has an active event request in the requested date range");
+        }
         MainEquipmentStatus status = MainEquipmentStatus.builder()
                 .mainEquipment(equipment)
                 .statusType(req.statusType())
@@ -235,6 +272,21 @@ public class EquipmentService {
         if (!status.getMainEquipment().getMainEquipmentId().equals(equipmentId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Status entry not found: " + statusId);
         }
+        if (mainEquipmentStatusRepository.existsConflictingStatusExcluding(
+                equipmentId, statusId, req.startDate(), req.endDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A status entry already exists that overlaps the requested date range");
+        }
+        if (equipmentRentalItemRepository.existsConflictingApprovedRental(
+                equipmentId, req.startDate(), req.endDate(), 0L, RENTAL_BLOCKING)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Equipment has an active rental booking in the requested date range");
+        }
+        if (eventEquipmentRequestItemRepository.existsConflictingRequest(
+                equipmentId, 0L, List.copyOf(EVENT_BLOCKING), req.startDate(), req.endDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Equipment has an active event request in the requested date range");
+        }
         status.setStatusType(req.statusType());
         status.setStartDate(req.startDate());
         status.setEndDate(req.endDate());
@@ -261,11 +313,17 @@ public class EquipmentService {
         SubEquipment sub = subEquipmentRepository.findById(subEquipmentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Sub equipment not found: " + subEquipmentId));
-        int existing = subEquipmentQuantityHoldRepository.sumHeldQuantity(
+        int existingHolds = subEquipmentQuantityHoldRepository.sumHeldQuantity(
                 subEquipmentId, req.startDate(), req.endDate(), 0L);
-        if (existing + req.quantity() > sub.getTotalQuantity()) {
+        int rentalCommitted = equipmentRentalSubItemRepository.sumCommittedQuantity(
+                subEquipmentId, req.startDate(), req.endDate(), RENTAL_BLOCKING);
+        int eventCommitted = eventEquipmentRequestSubItemRepository.sumCommittedQuantity(
+                subEquipmentId, req.startDate(), req.endDate(), EVENT_BLOCKING, 0L);
+        int totalAllocated = existingHolds + rentalCommitted + eventCommitted;
+        if (totalAllocated + req.quantity() > sub.getTotalQuantity()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Hold quantity (" + req.quantity() + ") plus existing holds (" + existing
+                    "Hold quantity (" + req.quantity() + ") plus existing allocations (holds="
+                            + existingHolds + ", rentals=" + rentalCommitted + ", events=" + eventCommitted
                             + ") exceeds total quantity (" + sub.getTotalQuantity() + ")");
         }
         SubEquipmentQuantityHold hold = SubEquipmentQuantityHold.builder()
@@ -299,11 +357,17 @@ public class EquipmentService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quantity hold not found: " + holdId);
         }
         SubEquipment sub = hold.getSubEquipment();
-        int existing = subEquipmentQuantityHoldRepository.sumHeldQuantity(
+        int existingHolds = subEquipmentQuantityHoldRepository.sumHeldQuantity(
                 subEquipmentId, req.startDate(), req.endDate(), holdId);
-        if (existing + req.quantity() > sub.getTotalQuantity()) {
+        int rentalCommitted = equipmentRentalSubItemRepository.sumCommittedQuantity(
+                subEquipmentId, req.startDate(), req.endDate(), RENTAL_BLOCKING);
+        int eventCommitted = eventEquipmentRequestSubItemRepository.sumCommittedQuantity(
+                subEquipmentId, req.startDate(), req.endDate(), EVENT_BLOCKING, 0L);
+        int totalAllocated = existingHolds + rentalCommitted + eventCommitted;
+        if (totalAllocated + req.quantity() > sub.getTotalQuantity()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Hold quantity (" + req.quantity() + ") plus existing holds (" + existing
+                    "Hold quantity (" + req.quantity() + ") plus existing allocations (holds="
+                            + existingHolds + ", rentals=" + rentalCommitted + ", events=" + eventCommitted
                             + ") exceeds total quantity (" + sub.getTotalQuantity() + ")");
         }
         hold.setQuantity(req.quantity());
@@ -382,7 +446,27 @@ public class EquipmentService {
                 e.getModel(),
                 e.getSerialNumber(),
                 e.getCondition(),
-                // e.getStatus(),
+                e.getStatus(),
+                e.getNotes(),
+                pc != null ? pc.getId() : null,
+                pc != null ? pc.getName() : null,
+                e.isForRent(),
+                statuses
+        );
+    }
+
+    private MainEquipmentResponse toMainResponse(MainEquipment e, MainEquipmentStatusType effectiveStatus,
+            List<MainEquipmentStatusResponse> statuses) {
+        RentalCategory pc = e.getPricingCategory();
+        return new MainEquipmentResponse(
+                e.getMainEquipmentId(),
+                e.getEquipmentType(),
+                e.getLensType(),
+                e.getBrand(),
+                e.getModel(),
+                e.getSerialNumber(),
+                e.getCondition(),
+                effectiveStatus.name(),
                 e.getNotes(),
                 pc != null ? pc.getId() : null,
                 pc != null ? pc.getName() : null,

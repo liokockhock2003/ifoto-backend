@@ -42,6 +42,7 @@ public class EquipmentRentalService {
     private final RentalPricingService rentalPricingService;
     private final UserRepository userRepository;
     private final PaymentService paymentService;
+    private final ReceiptService receiptService;
     private final MailService mailService;
     private final List<PaymentMethodHandler> paymentHandlers;
 
@@ -126,8 +127,8 @@ public class EquipmentRentalService {
     // ── Review (approve / reject) ─────────────────────────────────────────────
 
     @Transactional
-    public EquipmentRental reviewRental(Long id, String action, LocalDate approvedStart,
-            LocalDate approvedEnd, List<Long> equipmentIds, String rejectionReason,
+    public EquipmentRental reviewRental(Long id, String action,
+            List<Long> equipmentIds, String rejectionReason,
             String committeeNotes, String username) {
         User committee = findUser(username);
         EquipmentRental rental = findRental(id);
@@ -150,9 +151,8 @@ public class EquipmentRentalService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action must be APPROVE or REJECT");
         }
 
-        if (approvedStart == null || approvedEnd == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approvedStartDate and approvedEndDate required for approval");
-        }
+        LocalDate approvedStart = rental.getRequestedStartDate();
+        LocalDate approvedEnd = rental.getRequestedEndDate();
 
         List<Long> finalEquipmentIds = (equipmentIds != null && !equipmentIds.isEmpty())
                 ? equipmentIds
@@ -201,6 +201,7 @@ public class EquipmentRentalService {
         rental.setApprovedAt(LocalDateTime.now());
 
         rental = rentalRepository.save(rental);
+        receiptService.createInvoice(rental);
         mailService.sendRentalApprovedToRenter(rental.getRenter().getEmail(), rental.getRentalNumber(),
                 rental.getTotalAmount(), approvedStart, approvedEnd);
         return rental;
@@ -284,25 +285,14 @@ public class EquipmentRentalService {
                 ? today.toEpochDay() - rental.getDueReturnDate().toEpochDay()
                 : 0L;
 
-        long totalPenalty = 0L;
-        for (EquipmentRentalItem item : rental.getItems()) {
-            long penalty = item.getLatePenaltyPerDay() * overdueDays;
-            item.setLatePenaltyAmount(penalty);
-            item.setItemTotalAmount(item.getBaseAmount() + penalty);
-            totalPenalty += penalty;
-        }
-        for (EquipmentRentalSubItem subItem : rental.getSubItems()) {
-            long penalty = subItem.getLatePenaltyPerDay() * overdueDays;
-            subItem.setLatePenaltyAmount(penalty);
-            subItem.setItemTotalAmount(subItem.getBaseAmount() + penalty);
-            totalPenalty += penalty;
-        }
-
-        rental.setTotalPenaltyAmount(totalPenalty);
-        rental.setTotalAmount(rental.getTotalBaseAmount() + totalPenalty);
+        applyPenalty(rental, overdueDays);
         rental.setStatus(RentalStatus.RETURNED);
         rental.setReturnedAt(LocalDateTime.now());
-        return rentalRepository.save(rental);
+        rental = rentalRepository.save(rental);
+        if (overdueDays > 0) {
+            receiptService.createOverdueInvoice(rental);
+        }
+        return rental;
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -341,7 +331,47 @@ public class EquipmentRentalService {
         return rentalRepository.searchRentals(s, st, pageable);
     }
 
+    // ── Overdue penalty (called by scheduler + markReturned) ─────────────────
+
+    @Transactional
+    public void updateOverduePenalties() {
+        LocalDate today = LocalDate.now();
+
+        List<EquipmentRental> newlyOverdue = rentalRepository
+                .findByStatusAndDueReturnDateBefore(RentalStatus.ACTIVE, today);
+        newlyOverdue.forEach(r -> r.setStatus(RentalStatus.OVERDUE));
+        rentalRepository.saveAll(newlyOverdue);
+
+        List<EquipmentRental> alreadyOverdue = rentalRepository.findByStatus(RentalStatus.OVERDUE);
+        for (EquipmentRental r : alreadyOverdue) {
+            long days = today.toEpochDay() - r.getDueReturnDate().toEpochDay();
+            applyPenalty(r, days);
+        }
+        rentalRepository.saveAll(alreadyOverdue);
+
+        log.info("Marked {} new OVERDUE, recalculated penalty for {} existing OVERDUE rental(s)",
+                newlyOverdue.size(), alreadyOverdue.size());
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private void applyPenalty(EquipmentRental rental, long overdueDays) {
+        long total = 0L;
+        for (EquipmentRentalItem item : rental.getItems()) {
+            long penalty = item.getLatePenaltyPerDay() * overdueDays;
+            item.setLatePenaltyAmount(penalty);
+            item.setItemTotalAmount(item.getBaseAmount() + penalty);
+            total += penalty;
+        }
+        for (EquipmentRentalSubItem sub : rental.getSubItems()) {
+            long penalty = sub.getLatePenaltyPerDay() * overdueDays;
+            sub.setLatePenaltyAmount(penalty);
+            sub.setItemTotalAmount(sub.getBaseAmount() + penalty);
+            total += penalty;
+        }
+        rental.setTotalPenaltyAmount(total);
+        rental.setTotalAmount(rental.getTotalBaseAmount() + total);
+    }
 
     private User findUser(String username) {
         return userRepository.findByUsername(username)
