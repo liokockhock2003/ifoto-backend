@@ -7,11 +7,16 @@ import com.ifoto.ifoto_backend.dto.ReceiptDTO.ReceiptSubItemResponse;
 import com.ifoto.ifoto_backend.model.EquipmentRentalItem;
 import com.ifoto.ifoto_backend.model.EquipmentRentalSubItem;
 import com.ifoto.ifoto_backend.model.Receipt;
+import com.ifoto.ifoto_backend.service.RentalNotificationService;
 import com.ifoto.ifoto_backend.service.ReceiptService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/receipts")
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class ReceiptController {
 
     private final ReceiptService receiptService;
+    private final RentalNotificationService notificationService;
 
     @GetMapping("/invoice/rental/{rentalId}")
     public ResponseEntity<InvoiceResponse> getInvoice(
@@ -42,6 +48,29 @@ public class ReceiptController {
     public ResponseEntity<ReceiptResponse> getOverdueReceipt(
             @PathVariable Long rentalId, Authentication auth) {
         return ResponseEntity.ok(toResponse(receiptService.getOverdueReceipt(rentalId, auth.getName())));
+    }
+
+    @GetMapping(value = "/events/rental/{rentalId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToRentalEvents(@PathVariable Long rentalId, Authentication auth) {
+        receiptService.checkRentalAccess(rentalId, auth.getName());
+        SseEmitter emitter = notificationService.subscribe(rentalId);
+        sendExistingDocuments(rentalId, emitter);
+        return emitter;
+    }
+
+    private void sendExistingDocuments(Long rentalId, SseEmitter emitter) {
+        receiptService.findExistingReceipts(rentalId).forEach(r -> {
+            try {
+                var type = r.getDocumentType();
+                emitter.send(SseEmitter.event()
+                        .name("receipt-ready")
+                        .id(type.name())
+                        .data("{\"documentType\":\"%s\",\"receiptNumber\":\"%s\",\"rentalId\":%d}"
+                                .formatted(type.name(), type.prefix() + r.getReceiptNumber(), rentalId)));
+            } catch (IOException e) {
+                // emitter already gone; ignore
+            }
+        });
     }
 
     // ── Mappers ───────────────────────────────────────────────────────────────

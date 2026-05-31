@@ -35,11 +35,6 @@
     "description": "A description for 'app.cors.allowed-origins'"
   },
   {
-    "name": "app.welcome.message",
-    "type": "java.lang.String",
-    "description": "A description for 'app.welcome.message'"
-  },
-  {
     "name": "jwt.secret",
     "type": "java.lang.String",
     "description": "A description for 'jwt.secret'"
