@@ -8,6 +8,7 @@ import com.ifoto.ifoto_backend.repository.EquipmentRentalRepository;
 import com.ifoto.ifoto_backend.repository.EventEquipmentRequestRepository;
 import com.ifoto.ifoto_backend.service.EquipmentRentalService;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,6 +27,13 @@ public class RentalScheduler {
     private final EquipmentRentalRepository rentalRepository;
     private final EventEquipmentRequestRepository eventRequestRepository;
     private final EquipmentRentalService rentalService;
+
+    @PostConstruct
+    public void runOnStartup() {
+        markActiveRentals();
+        markOverdueRentals();
+        markActiveEventRequests();
+    }
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional

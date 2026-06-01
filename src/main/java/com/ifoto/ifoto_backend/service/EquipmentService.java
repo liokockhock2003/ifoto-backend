@@ -126,12 +126,11 @@ public class EquipmentService {
                 .model(req.model())
                 .serialNumber(req.serialNumber())
                 .condition(req.condition())
-                .status(req.status())
-                .notes(req.notes())
+                .problems(req.problems())
                 .pricingCategory(pricingCategory)
                 .isForRent(req.isForRent())
                 .build();
-        return toMainResponse(mainEquipmentRepository.save(entity), List.of());
+        return toMainResponse(mainEquipmentRepository.save(entity), MainEquipmentStatusType.AVAILABLE, List.of());
     }
 
     @Transactional
@@ -145,25 +144,28 @@ public class EquipmentService {
         entity.setModel(req.model());
         entity.setSerialNumber(req.serialNumber());
         entity.setCondition(req.condition());
-        entity.setStatus(req.status());
-        entity.setNotes(req.notes());
+        entity.setProblems(req.problems());
         if (req.pricingCategoryId() != null) {
             entity.setPricingCategory(resolvePricingCategory(req.pricingCategoryId()));
         }
         entity.setForRent(req.isForRent());
+        MainEquipmentStatusType currentStatus = mainEquipmentStatusRepository
+                .findActiveByEquipmentIds(List.of(id), LocalDate.now())
+                .stream().findFirst()
+                .map(MainEquipmentStatus::getStatusType)
+                .orElse(MainEquipmentStatusType.AVAILABLE);
         List<MainEquipmentStatusResponse> statuses = mainEquipmentStatusRepository
                 .findUpcomingByEquipmentIds(List.of(id), LocalDate.now())
                 .stream().map(this::toStatusResponse).toList();
-        return toMainResponse(mainEquipmentRepository.save(entity), statuses);
+        return toMainResponse(mainEquipmentRepository.save(entity), currentStatus, statuses);
     }
 
     @Transactional
     public void deleteMainEquipment(Long id) {
-        int deleted = mainEquipmentRepository.deleteByIdReturningCount(id);
-        if (deleted == 0) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Main equipment not found with id: " + id);
-        }
+        MainEquipment entity = mainEquipmentRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Main equipment not found with id: " + id));
+        mainEquipmentRepository.delete(entity);
     }
 
     // ── Sub Equipment ─────────────────────────────────────────────────────────
@@ -398,7 +400,7 @@ public class EquipmentService {
         List<MainEquipmentResponse> mainList = mainEquipmentRepository
                 .findAvailableEquipment(isRental, startDate, endDate, RENTAL_BLOCKING, EVENT_BLOCKING)
                 .stream()
-                .map(e -> toMainResponse(e, List.of()))
+                .map(e -> toMainResponse(e, MainEquipmentStatusType.AVAILABLE, List.of()))
                 .toList();
 
         // ── Sub-equipment: context-filtered, batch-sum all 3 commitment sources ──
@@ -436,25 +438,6 @@ public class EquipmentService {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private MainEquipmentResponse toMainResponse(MainEquipment e, List<MainEquipmentStatusResponse> statuses) {
-        RentalCategory pc = e.getPricingCategory();
-        return new MainEquipmentResponse(
-                e.getMainEquipmentId(),
-                e.getEquipmentType(),
-                e.getLensType(),
-                e.getBrand(),
-                e.getModel(),
-                e.getSerialNumber(),
-                e.getCondition(),
-                e.getStatus(),
-                e.getNotes(),
-                pc != null ? pc.getId() : null,
-                pc != null ? pc.getName() : null,
-                e.isForRent(),
-                statuses
-        );
-    }
-
     private MainEquipmentResponse toMainResponse(MainEquipment e, MainEquipmentStatusType effectiveStatus,
             List<MainEquipmentStatusResponse> statuses) {
         RentalCategory pc = e.getPricingCategory();
@@ -466,8 +449,8 @@ public class EquipmentService {
                 e.getModel(),
                 e.getSerialNumber(),
                 e.getCondition(),
-                effectiveStatus.name(),
-                e.getNotes(),
+                effectiveStatus.name(),  // always computed from main_equipment_statuses
+                e.getProblems(),
                 pc != null ? pc.getId() : null,
                 pc != null ? pc.getName() : null,
                 e.isForRent(),

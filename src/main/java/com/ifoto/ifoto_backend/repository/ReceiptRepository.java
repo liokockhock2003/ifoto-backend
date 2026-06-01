@@ -15,4 +15,6 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
     List<Receipt> findByUserOrderByIssuedAtDesc(User user);
 
     Optional<Receipt> findByEquipmentRentalIdAndDocumentType(Long rentalId, DocumentType documentType);
+
+    Optional<Receipt> findFirstByEquipmentRentalIdAndReceiptNumberNotOrderByIdAsc(Long rentalId, String receiptNumber);
 }

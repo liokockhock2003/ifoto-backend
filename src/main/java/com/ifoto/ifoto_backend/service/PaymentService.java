@@ -33,10 +33,10 @@ public class PaymentService {
 
     @Transactional
     public void handleBillplzCallback(Map<String, String> params) {
-        log.info("Billplz callback received: {}", params);
+        log.debug("Billplz callback received: {}", params);
         String receivedSig = params.get("x_signature");
         if (!xSignatureService.verify(params, receivedSig)) {
-            log.warn("Invalid Billplz x_signature — received={}, params={}", receivedSig, params);
+            log.warn("Invalid Billplz x_signature — bill_id={}", params.get("id"));
             return;
         }
 
@@ -47,9 +47,7 @@ public class PaymentService {
             return;
         }
 
-        log.info("Callback paid={} state={}", params.get("paid"), params.get("state"));
         if ("true".equals(params.get("paid")) && "paid".equals(params.get("state"))) {
-            log.info("Payment {} marked PAID", payment.getId());
             payment.setStatus(PaymentRecordStatus.PAID);
             payment.setPaidAmount(payment.getAmount());
             payment.setPaidAt(LocalDateTime.now());
@@ -59,14 +57,12 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             EquipmentRental rental = payment.getEquipmentRental();
-            log.info("Rental {} current status={}, paymentStatus={}", rental.getRentalNumber(), rental.getStatus(), rental.getPaymentStatus());
             boolean isPenalty = rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
             if (isPenalty) {
-                log.info("Penalty payment confirmed for rental {}", rental.getRentalNumber());
                 rental.setStatus(RentalStatus.RETURNED);
                 rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
+                log.info("Penalty payment confirmed for rental {}", rental.getRentalNumber());
             } else {
-                log.info("Normal payment confirmed for rental {}, setting PAID", rental.getRentalNumber());
                 rental.setPaidAt(LocalDateTime.now());
                 rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PAID);
                 if (rental.getApprovedStartDate() != null && !rental.getApprovedStartDate().isAfter(LocalDate.now())) {
@@ -75,6 +71,7 @@ public class PaymentService {
                 } else {
                     rental.setStatus(RentalStatus.PAID);
                 }
+                log.info("Payment confirmed for rental {}, status={}", rental.getRentalNumber(), rental.getStatus());
             }
 
             Receipt receipt = isPenalty
@@ -84,7 +81,7 @@ public class PaymentService {
                     rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
 
         } else if ("false".equals(params.get("paid"))) {
-            log.info("Payment {} marked FAILED", payment.getId());
+            log.warn("Payment {} marked FAILED, state={}", payment.getId(), params.get("state"));
             payment.setStatus(PaymentRecordStatus.FAILED);
             payment.setTransactionStatus(params.get("state"));
             paymentRepository.save(payment);

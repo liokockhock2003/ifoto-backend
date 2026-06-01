@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.model;
 
+import com.ifoto.ifoto_backend.model.enumerator.EquipmentCondition;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,14 +33,12 @@ public class MainEquipment {
     @Column(name = "serial_number", length = 100, unique = true)
     private String serialNumber;
 
-    @Column(name = "\"condition\"", length = 50)
-    private String condition;
-
-    @Column(length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "\"condition\"", length = 10)
+    private EquipmentCondition condition;
 
     @Column(columnDefinition = "TEXT")
-    private String notes;
+    private String problems;
 
     @Column(name = "lens_type", length = 50)
     private String lensType;
