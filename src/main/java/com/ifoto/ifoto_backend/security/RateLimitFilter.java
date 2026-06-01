@@ -14,11 +14,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -46,7 +48,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofMinutes(10)).build());
     }
 
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(1, TimeUnit.HOURS)
+            .maximumSize(100_000)
+            .build();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -71,7 +76,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String bucketKey = resolveKey(request, matchedPattern);
         Bandwidth finalLimit = limit;
-        Bucket bucket = buckets.computeIfAbsent(bucketKey,
+        Bucket bucket = buckets.get(bucketKey,
                 k -> Bucket.builder().addLimit(finalLimit).build());
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);

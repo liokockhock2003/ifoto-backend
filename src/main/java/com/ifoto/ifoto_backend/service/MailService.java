@@ -51,7 +51,7 @@ public class MailService {
             String renterName, List<String> equipmentList, LocalDate start, LocalDate end) {
         StringBuilder equipmentRows = new StringBuilder();
         for (String eq : equipmentList) {
-            equipmentRows.append("<li style='padding:4px 0;color:#374151;font-size:14px;'>").append(eq).append("</li>");
+            equipmentRows.append("<li style='padding:4px 0;color:#374151;font-size:14px;'>").append(esc(eq)).append("</li>");
         }
         String body = badge("New Request", "#dbeafe", "#1e40af")
                 + h2("New Rental Request")
@@ -130,7 +130,7 @@ public class MailService {
             helper.setText(html, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage());
+            log.error("Failed to send email to {}", to, e);
         }
     }
 
@@ -144,17 +144,18 @@ public class MailService {
             helper.setText(html, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            log.error("Failed to send email to {}: {}", recipients, e.getMessage());
+            log.error("Failed to send email to {}", recipients, e);
         }
     }
 
     // ── HTML template builders ────────────────────────────────────────────────
 
     private String wrap(String title, String bodyHtml) {
+        String safeName = esc(appName);
         return "<!DOCTYPE html><html lang='en'><head>"
                 + "<meta charset='UTF-8'>"
                 + "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-                + "<title>" + title + "</title></head>"
+                + "<title>" + esc(title) + "</title></head>"
                 + "<body style='margin:0;padding:0;background-color:#f3f4f6;"
                 + "font-family:\"Helvetica Neue\",Helvetica,Arial,sans-serif;'>"
                 + "<table width='100%' cellpadding='0' cellspacing='0' border='0'"
@@ -167,7 +168,7 @@ public class MailService {
                 + "<tr><td style='background-color:#111827;border-radius:8px 8px 0 0;"
                 + "padding:32px;text-align:center;'>"
                 + "<p style='margin:0;color:#ffffff;font-size:26px;font-weight:700;"
-                + "letter-spacing:4px;'>" + appName + "</p>"
+                + "letter-spacing:4px;'>" + safeName + "</p>"
                 + "<p style='margin:6px 0 0;color:#9ca3af;font-size:12px;"
                 + "letter-spacing:2px;text-transform:uppercase;'>Photography Club</p>"
                 + "</td></tr>"
@@ -181,7 +182,7 @@ public class MailService {
                 // Footer
                 + "<tr><td style='padding:24px 16px;text-align:center;'>"
                 + "<p style='margin:0;color:#9ca3af;font-size:12px;'>"
-                + "© 2026 " + appName + " Photography Club. All rights reserved.</p>"
+                + "© 2026 " + safeName + " Photography Club. All rights reserved.</p>"
                 + "<p style='margin:6px 0 0;color:#9ca3af;font-size:12px;'>"
                 + "This is an automated message — please do not reply.</p>"
                 + "</td></tr>"
@@ -191,32 +192,32 @@ public class MailService {
 
     private String h2(String text) {
         return "<h2 style='margin:16px 0 8px;color:#111827;font-size:22px;"
-                + "font-weight:700;'>" + text + "</h2>";
+                + "font-weight:700;'>" + esc(text) + "</h2>";
     }
 
     private String p(String text) {
         return "<p style='margin:16px 0;color:#4b5563;font-size:15px;line-height:1.6;'>"
-                + text + "</p>";
+                + esc(text) + "</p>";
     }
 
     private String note(String text) {
         return "<p style='margin:24px 0 0;color:#9ca3af;font-size:13px;line-height:1.6;"
-                + "border-top:1px solid #f3f4f6;padding-top:16px;'>" + text + "</p>";
+                + "border-top:1px solid #f3f4f6;padding-top:16px;'>" + esc(text) + "</p>";
     }
 
     private String badge(String text, String bgColor, String textColor) {
         return "<p style='margin:0 0 16px;'><span style='display:inline-block;"
                 + "background-color:" + bgColor + ";color:" + textColor + ";"
                 + "font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;"
-                + "padding:4px 12px;border-radius:999px;'>" + text + "</span></p>";
+                + "padding:4px 12px;border-radius:999px;'>" + esc(text) + "</span></p>";
     }
 
     private String button(String text, String href, String bgColor) {
         return "<table cellpadding='0' cellspacing='0' border='0' style='margin:28px auto;'><tr>"
                 + "<td style='background-color:" + bgColor + ";border-radius:6px;text-align:center;'>"
-                + "<a href='" + href + "' style='display:inline-block;padding:14px 36px;"
+                + "<a href='" + esc(href) + "' style='display:inline-block;padding:14px 36px;"
                 + "color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;"
-                + "letter-spacing:0.3px;'>" + text + "</a>"
+                + "letter-spacing:0.3px;'>" + esc(text) + "</a>"
                 + "</td></tr></table>";
     }
 
@@ -230,13 +231,25 @@ public class MailService {
               .append("<td style='padding:12px 16px;background-color:#f9fafb;"
                     + "color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;"
                     + "letter-spacing:0.5px;border-bottom:1px solid #e5e7eb;"
-                    + "white-space:nowrap;width:38%;'>").append(row[0]).append("</td>")
+                    + "white-space:nowrap;width:38%;'>").append(esc(row[0])).append("</td>")
               .append("<td style='padding:12px 16px;background-color:#ffffff;"
                     + "color:#111827;font-size:14px;border-bottom:1px solid #e5e7eb;'>")
-                    .append(row[1]).append("</td>")
+                    .append(esc(row[1])).append("</td>")
               .append("</tr>");
         }
         sb.append("</table>");
         return sb.toString();
+    }
+
+    // ── Security ──────────────────────────────────────────────────────────────
+
+    private static String esc(String text) {
+        if (text == null) return "";
+        return text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
     }
 }

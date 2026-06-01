@@ -2,6 +2,7 @@
 -- V5: Seed data (development / local)
 -- Insertion order follows FK dependency chain.
 -- All user passwords: "password" (BCrypt strength 10)
+-- Equipment data sourced from: List Alatan KFK 2026
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── 1. Roles ──────────────────────────────────────────────────────────────────
@@ -74,31 +75,111 @@ SELECT id, 'NON_STUDENT',  40.00,   90.00, 30.00, 40.00 FROM rental_pricing_cate
 SELECT id, 'NON_STUDENT', 110.00,  360.00, 60.00, 40.00 FROM rental_pricing_category WHERE name = 'LENS_TELE';
 
 -- ── 5. Main equipment ─────────────────────────────────────────────────────────
-INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, status, notes, is_for_rent)
-VALUES
--- Cameras
-('Camera', 'Canon', NULL,        'EOS R5',                  'SN-CANON-R5-001',        'Excellent', 'Available', 'High-res full-frame mirrorless',       1),
-('Camera', 'Canon', NULL,        'EOS R6 II',               'SN-CANON-R6II-001',      'Good',      'Available', 'Sports & event mirrorless body',        1),
-('Camera', 'Nikon', NULL,        'Z8',                      'SN-NIKON-Z8-001',        'Excellent', 'Available', 'High-res Z-mount mirrorless',           1),
-('Camera', 'Nikon', NULL,        'Z6 III',                  'SN-NIKON-Z6III-001',     'Good',      'Available', 'Hybrid photo/video mirrorless body',    1),
--- Lenses – Canon – PRIME (not for rent)
-('Lens', 'Canon', 'PRIME',     'RF 50mm f/1.2L',          'SN-CANON-L-50-001',      'Excellent', 'Available', 'Flagship Canon prime lens',             0),
-('Lens', 'Canon', 'PRIME',     'RF 85mm f/1.2L DS',       'SN-CANON-L-85-001',      'Good',      'Available', 'Portrait prime with DS coating',        0),
--- Lenses – Canon – NORMAL
-('Lens', 'Canon', 'NORMAL',    'RF 24-70mm f/2.8L',       'SN-CANON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Canon RF-mount',      1),
-('Lens', 'Canon', 'NORMAL',    'RF 15-35mm f/2.8L',       'SN-CANON-L-1535-001',    'Good',      'Available', 'Wide-angle zoom for Canon RF',          1),
--- Lenses – Canon – TELEPHOTO
-('Lens', 'Canon', 'TELEPHOTO', 'RF 70-200mm f/2.8L',      'SN-CANON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Canon RF',           1),
-('Lens', 'Canon', 'TELEPHOTO', 'RF 100-500mm f/4.5L',     'SN-CANON-L-100500-001',  'Good',      'Available', 'Super-telephoto zoom for Canon RF',     1),
--- Lenses – Nikon – PRIME (not for rent)
-('Lens', 'Nikon', 'PRIME',     'NIKKOR Z 50mm f/1.2',     'SN-NIKON-L-50-001',      'Excellent', 'Available', 'Flagship Nikon Z prime lens',           0),
-('Lens', 'Nikon', 'PRIME',     'NIKKOR Z 85mm f/1.2',     'SN-NIKON-L-85-001',      'Good',      'Available', 'Portrait prime for Z-mount',            0),
--- Lenses – Nikon – NORMAL
-('Lens', 'Nikon', 'NORMAL',    'NIKKOR Z 24-70mm f/2.8',  'SN-NIKON-L-2470-001',    'Excellent', 'Available', 'Standard zoom for Z-mount',             1),
-('Lens', 'Nikon', 'NORMAL',    'NIKKOR Z 14-30mm f/4',    'SN-NIKON-L-1430-001',    'Good',      'Available', 'Wide-angle zoom for Z-mount',           1),
--- Lenses – Nikon – TELEPHOTO
-('Lens', 'Nikon', 'TELEPHOTO', 'NIKKOR Z 70-200mm f/2.8', 'SN-NIKON-L-70200-001',   'Excellent', 'Available', 'Telephoto zoom for Z-mount',            1),
-('Lens', 'Nikon', 'TELEPHOTO', 'NIKKOR Z 100-400mm f/4.5','SN-NIKON-L-100400-001',  'Good',      'Available', 'Super-telephoto zoom for Z-mount',      1);
+-- Source: List Alatan KFK 2026
+-- condition : Good / Faulty
+
+-- Canon Cameras
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Camera', 'Canon', NULL, '5D Mark IV', '********1849', 'GOOD',   'Being used for convocation',      1),
+('Camera', 'Canon', NULL, '5D Mark IV', '********0528', 'GOOD',   'Being used for convocation',      1),
+('Camera', 'Canon', NULL, '5D Mark IV', '********2053', 'FAIR',   'Being used for convocation',      1),
+('Camera', 'Canon', NULL, '5D Mark IV', '********2100', 'GOOD',   'Being used for convocation',      1),
+('Camera', 'Canon', NULL, '5D Mark II', '******4547',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '5D Mark II', '******0957',   'FAULTY', 'Cannot snap, CF card problem',    1),
+('Camera', 'Canon', NULL, '5D Mark II', '******4545',   'GOOD',   'Live view capable',               1),
+('Camera', 'Canon', NULL, '5D Mark II', '******2214',   'GOOD',   'Live view capable',               1),
+('Camera', 'Canon', NULL, '60D',        '******8600',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '60D',        '******0470',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '60D',        '******0471',   'FAIR',   NULL,                              1),
+('Camera', 'Canon', NULL, '60D',        '******0472',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '50D',        '******0164',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '50D',        '******8476',   'FAULTY', 'Error 99, cannot snap',           1),
+('Camera', 'Canon', NULL, '50D',        '******8479',   'FAULTY', 'Cannot snap, screen blank',       1),
+('Camera', 'Canon', NULL, '50D',        '******8477',   'GOOD',   'Recently serviced, no live view', 1),
+('Camera', 'Canon', NULL, '30D',        '******2484',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******4122',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******4120',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******4123',   'FAIR',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******7685',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******4118',   'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, '30D',        '******4121',   'FAIR',   'Main dial less responsive',       1),
+('Camera', 'Canon', NULL, 'EOS R10',    NULL,           'GOOD',   NULL,                              1),
+('Camera', 'Canon', NULL, 'EOS R10',    NULL,           'GOOD',   NULL,                              1);
+
+-- Nikon Cameras
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Camera', 'Nikon', NULL, 'D90',   '***5025', 'GOOD', NULL,                  1),
+('Camera', 'Nikon', NULL, 'D90',   '***5013', 'GOOD', NULL,                  1),
+('Camera', 'Nikon', NULL, 'D90',   '***5014', 'GOOD', NULL,                  1),
+('Camera', 'Nikon', NULL, 'D90',   '***5024', 'GOOD', 'Recently serviced',   1),
+('Camera', 'Nikon', NULL, 'D700',  '***5845', 'GOOD', NULL,                  1),
+('Camera', 'Nikon', NULL, 'D7000', '***2534', 'GOOD', NULL,                  1),
+('Camera', 'Nikon', NULL, 'D7000', '***5571', 'GOOD', 'Minor screen defect', 1),
+('Camera', 'Nikon', NULL, 'D7000', '***7401', 'GOOD', 'Minor screen defect', 1),
+('Camera', 'Nikon', NULL, 'D7000', '***5396', 'GOOD', 'Minor screen defect', 1),
+('Camera', 'Nikon', NULL, 'D7000', '***5405', 'GOOD', 'Minor screen defect', 1);
+
+-- Sony Camcorders
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Camera', 'Sony', NULL, 'Camcorder', NULL, 'GOOD', NULL, 1),
+('Camera', 'Sony', NULL, 'Camcorder', NULL, 'GOOD', NULL, 1);
+
+-- Canon Lenses (working)
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Lens', 'Canon', 'PRIME',     'EF 50mm',        NULL,         'GOOD', NULL,                                  0),
+('Lens', 'Canon', 'PRIME',     'EF 50mm',        NULL,         'GOOD', NULL,                                  0),
+('Lens', 'Canon', 'NORMAL',    'EF 17-40mm USM', NULL,         'GOOD', 'Being used for convocation',          1),
+('Lens', 'Canon', 'NORMAL',    'EF 17-40mm USM', NULL,         'GOOD', 'Being used for convocation',          1),
+('Lens', 'Canon', 'NORMAL',    'EF 17-40mm USM', NULL,         'GOOD', 'Being used for convocation',          1),
+('Lens', 'Canon', 'NORMAL',    'EF 17-40mm USM', NULL,         'GOOD', 'Being used for convocation',          1),
+('Lens', 'Sigma', 'NORMAL',    'DC 18-250mm',    '****5731',   'GOOD', 'Loose rubber grip',                   1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******5294', 'FAIR', NULL,                                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******0062', 'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******8839', 'GOOD', 'Attachment to body issue',            1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******7880', 'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******3692', 'GOOD', 'AF not functioning',                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******3617', 'FAIR', NULL,                                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '****2061',   'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'NORMAL',    'EF-S 18-55mm',   '******7877', 'GOOD', 'Previously taped, recently serviced', 1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '******1924', 'GOOD', 'Shaking noted but functioning',       1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '**4247',     'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '******0167', 'FAIR', NULL,                                  1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '**4807',     'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '**4259',     'FAIR', NULL,                                  1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '******9487', 'GOOD', NULL,                                  1),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm',    '******0184', 'GOOD', NULL,                                  1);
+
+-- Nikon Lenses (working)
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Lens', 'Nikon', 'PRIME',     'AF NIKKOR 50mm',             '***1233',  'GOOD', NULL,           0),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-105mm',    '****8203', 'GOOD', NULL,           1),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-105mm',    '****8205', 'GOOD', NULL,           1),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-105mm',    '****8202', 'GOOD', NULL,           1),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-55mm',     '****9142', 'GOOD', NULL,           1),
+('Lens', 'Nikon', 'NORMAL',    'AF-S N NIKKOR 16-35mm',      NULL,       'GOOD', NULL,           1),
+('Lens', 'Nikon', 'NORMAL',    'AF-S N NIKKOR 16-35mm',      NULL,       'GOOD', 'Minor fungus', 1),
+('Lens', 'Sigma', 'NORMAL',    'SIGMA 28-105mm D Aspherical', '***1490',  'GOOD', NULL,           1),
+('Lens', 'Sigma', 'NORMAL',    'SIGMA 28-105mm D Aspherical', NULL,       'GOOD', 'Minor fungus', 1);
+
+-- Canon Lenses (faulty — under maintenance)
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Lens', 'Sigma', 'NORMAL',    'DC 18-250mm', '****5745', 'FAULTY', 'Cannot zoom',       0),
+('Lens', 'Sigma', 'NORMAL',    'DC 17-50mm',  '****1496', 'FAULTY', 'Loose rubber grip', 0),
+('Lens', 'Sigma', 'NORMAL',    'DC 17-50mm',  '****6514', 'FAULTY', 'Loose rubber grip', 0),
+('Lens', 'Canon', 'TELEPHOTO', 'EF 70-200mm', '**4768',   'FAULTY', 'Autofocus faulty',  0);
+
+-- Nikon Lenses (faulty — under maintenance)
+INSERT INTO main_equipment (equipment_type, brand, lens_type, model, serial_number, `condition`, problems, is_for_rent) VALUES
+('Lens', 'Nikon', 'PRIME',     'AF NIKKOR 50mm',           '***8720',  'FAULTY', 'Lens error',                  0),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-105mm',  '****6854', 'FAULTY', 'Fungus',                      0),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-55mm',   '****1203', 'FAULTY', 'Cannot autofocus',            0),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-70mm',   '***9540',  'FAULTY', 'Zoom and autofocus problem',  0),
+('Lens', 'Nikon', 'NORMAL',    'AF-S DX NIKKOR 18-70mm',   '***7239',  'FAULTY', 'Zoom and autofocus problem',  0),
+('Lens', 'Nikon', 'TELEPHOTO', 'AF NIKKOR 75-240mm',       NULL,       'FAULTY', 'Error',                       0),
+('Lens', 'Sigma', 'TELEPHOTO', 'SIGMA EX 70-200mm',        '****2104', 'FAULTY', 'Error',                       0),
+('Lens', 'Sigma', 'TELEPHOTO', 'SIGMA EX 70-200mm',        '****3960', 'FAULTY', 'Error',                       0),
+('Lens', 'Nikon', 'TELEPHOTO', 'AF ED NIKKOR 80-200mm',    NULL,       'FAULTY', 'Error',                       0),
+('Lens', 'Nikon', 'TELEPHOTO', 'AF ED NIKKOR 80-200mm',    NULL,       'FAULTY', 'Error',                       0);
 
 -- Link main_equipment to pricing categories
 UPDATE main_equipment me JOIN rental_pricing_category rpc ON rpc.name = 'CAMERA'
@@ -113,30 +194,35 @@ UPDATE main_equipment me JOIN rental_pricing_category rpc ON rpc.name = 'LENS_TE
 INSERT INTO sub_equipment (type, equipment_type, camera_model, brand, capacity, total_quantity, notes, pricing_category_id, is_for_rent)
 VALUES
 -- Battery Camera
-('Battery Camera',  'Canon',      '["EOS R5", "EOS R6 II"]', 'Canon', 1, 12, 'Batteries for Canon EOS R5 & R6 II',   NULL, 0),
-('Battery Camera',  'Nikon',      '["Z8", "Z6 III"]',         'Nikon', 1, 10, 'Batteries for Nikon Z8 & Z6 III',      NULL, 0),
+('Battery Camera', 'Canon', '["50D", "30D"]',                       'Canon', 1, 23, 'Batteries for Canon 50D & 30D',                   NULL, 0),
+('Battery Camera', 'Canon', '["60D", "5D Mark II", "5D Mark IV"]',  'Canon', 1, 15, 'Batteries for Canon 60D, 5D Mark II, 5D Mark IV', NULL, 0),
+('Battery Camera', 'Nikon', '["D90", "D700"]',                      'Nikon', 1, 12, 'Batteries for Nikon D90 & D700',                  NULL, 0),
+('Battery Camera', 'Nikon', '["D7000"]',                            'Nikon', 1, 11, 'Batteries for Nikon D7000',                       NULL, 0),
 -- Charger Battery
-('Charger Battery', 'Canon',      '["EOS R5", "EOS R6 II"]', 'Canon', 1,  5, 'Charger for Canon LP-E6NH battery',    NULL, 0),
-('Charger Battery', 'Nikon',      '["Z8", "Z6 III"]',         'Nikon', 1,  4, 'Charger for Nikon EN-EL15c battery',   NULL, 0),
+('Charger Battery', 'Canon', '["50D", "30D"]',                      'Canon', 1,  7, 'Charger for Canon 50D & 30D battery',             NULL, 0),
+('Charger Battery', 'Canon', '["60D", "5D Mark II", "5D Mark IV"]', 'Canon', 1,  6, 'Charger for Canon 60D, 5D MII, 5D MIV battery',  NULL, 0),
+('Charger Battery', 'Nikon', '["D90", "D700"]',                     'Nikon', 1,  1, 'Charger for Nikon D90 & D700 battery',            NULL, 0),
+('Charger Battery', 'Nikon', '["D7000"]',                           'Nikon', 1,  6, 'Charger for Nikon D7000 battery',                 NULL, 0),
 -- Speedlight (linked to SPEEDLIGHT pricing below)
-('Speedlight',      'Speedlight', NULL,                        NULL,   1,  4, 'Speedlight unit',                      NULL, 0),
-('Speedlight',      'Speedlight', NULL,                        NULL,   1,  3, 'Speedlight unit',                      NULL, 0),
--- SD Card / CF Card
-('SD Card/CF Card', 'SD Card',    NULL, NULL,  8, 15, 'SD Card 8GB',   NULL, 0),
-('SD Card/CF Card', 'SD Card',    NULL, NULL, 16, 12, 'SD Card 16GB',  NULL, 0),
-('SD Card/CF Card', 'SD Card',    NULL, NULL, 32, 10, 'SD Card 32GB',  NULL, 0),
-('SD Card/CF Card', 'CF Card',    NULL, NULL,  2,  8, 'CF Card 2GB',   NULL, 0),
-('SD Card/CF Card', 'CF Card',    NULL, NULL,  4,  6, 'CF Card 4GB',   NULL, 0),
-('SD Card/CF Card', 'CF Card',    NULL, NULL, 16,  5, 'CF Card 16GB',  NULL, 0),
+('Speedlight', 'Speedlight', NULL, NULL, 1, 5, 'Speedlight unit',       NULL, 0),
+('Speedlight', 'Speedlight', NULL, NULL, 1, 3, 'Speedlight unit (new)', NULL, 0),
+-- SD Card
+('SD Card/CF Card', 'SD Card', NULL, NULL,  8, 4, 'SD Card 8GB',  NULL, 0),
+('SD Card/CF Card', 'SD Card', NULL, NULL, 16, 4, 'SD Card 16GB', NULL, 0),
+('SD Card/CF Card', 'SD Card', NULL, NULL, 32, 5, 'SD Card 32GB', NULL, 0),
+-- CF Card
+('SD Card/CF Card', 'CF Card', NULL, NULL,  2, 1, 'CF Card 2GB',  NULL, 0),
+('SD Card/CF Card', 'CF Card', NULL, NULL,  4, 2, 'CF Card 4GB',  NULL, 0),
+('SD Card/CF Card', 'CF Card', NULL, NULL, 16, 5, 'CF Card 16GB', NULL, 0),
 -- Tripod
-('Tripod',          'Tripod',     NULL, NULL, 1,  4, 'Camera tripod',  NULL, 0),
-('Tripod',          'Tripod',     NULL, NULL, 1,  3, 'Camera tripod',  NULL, 0),
--- Lain-Lain
-('Lain-Lain', 'Kain Microfiber', NULL, NULL, 1, 20, 'Microfiber cleaning cloth',         NULL, 0),
-('Lain-Lain', 'Blower',          NULL, NULL, 1,  8, 'Air blower for sensor & lens cleaning', NULL, 0),
-('Lain-Lain', 'Wire Transfer',   NULL, NULL, 1,  6, 'USB-C data transfer cable',         NULL, 0),
-('Lain-Lain', 'Gimbal',          NULL, NULL, 1,  3, '3-axis camera stabiliser',          NULL, 0),
-('Lain-Lain', 'Card Reader',     NULL, NULL, 1, 10, 'Multi-slot USB-C card reader',       NULL, 0);
+('Tripod', 'Tripod', NULL, NULL, 1, 3, 'Camera tripod', NULL, 0),
+-- Lain-lain
+('Lain-Lain', 'Kain Microfiber', NULL, NULL, 1,  3, 'Microfiber cleaning cloth',           NULL, 0),
+('Lain-Lain', 'Blower',          NULL, NULL, 1,  8, 'Air blower for sensor/lens cleaning', NULL, 0),
+('Lain-Lain', 'Wire Transfer',   NULL, NULL, 1, 12, 'USB data transfer cable',             NULL, 0),
+('Lain-Lain', 'Gimbal',          NULL, NULL, 1,  1, '3-axis camera stabiliser',            NULL, 0),
+('Lain-Lain', 'Card Reader',     NULL, NULL, 1,  1, 'Multi-slot card reader',              NULL, 0),
+('Lain-Lain', 'Wire HDMI',       NULL, NULL, 1,  1, 'HDMI cable',                          NULL, 0);
 
 -- Link speedlights to SPEEDLIGHT pricing
 UPDATE sub_equipment s JOIN rental_pricing_category rpc ON rpc.name = 'SPEEDLIGHT'

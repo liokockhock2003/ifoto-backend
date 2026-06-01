@@ -19,7 +19,7 @@ public class Receipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "receipt_number", length = 20, unique = true, nullable = false)
+    @Column(name = "receipt_number", length = 30, nullable = false)
     private String receiptNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)

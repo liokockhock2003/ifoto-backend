@@ -129,6 +129,12 @@
             <version>8.10.1</version>
         </dependency>
 
+        <!-- Caffeine cache — used for TTL-based bucket eviction in RateLimitFilter -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

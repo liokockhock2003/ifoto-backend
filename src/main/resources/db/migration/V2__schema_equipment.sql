@@ -32,15 +32,13 @@ CREATE TABLE main_equipment (
     model               VARCHAR(100),
     serial_number       VARCHAR(100) UNIQUE,
     `condition`         VARCHAR(50),
-    status              VARCHAR(50),
-    notes               TEXT,
+    problems            TEXT,
     pricing_category_id BIGINT       NULL,
     is_for_rent         TINYINT(1)   NOT NULL DEFAULT 0,
     CONSTRAINT fk_me_pricing_category FOREIGN KEY (pricing_category_id) REFERENCES rental_pricing_category(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_main_equipment_type   ON main_equipment(equipment_type);
-CREATE INDEX idx_main_equipment_status ON main_equipment(status);
+CREATE INDEX idx_main_equipment_type ON main_equipment(equipment_type);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 

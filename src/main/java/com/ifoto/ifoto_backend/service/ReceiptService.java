@@ -40,7 +40,8 @@ public class ReceiptService {
 
     @Transactional
     public Receipt createOverdueInvoice(EquipmentRental rental) {
-        if (receiptRepository.findByEquipmentRentalIdAndDocumentType(rental.getId(), DocumentType.OVERDUE_INVOICE).isPresent()) {
+        if (receiptRepository.findByEquipmentRentalIdAndDocumentType(rental.getId(), DocumentType.OVERDUE_INVOICE)
+                .isPresent()) {
             return null;
         }
         return buildAndSave(rental, null, DocumentType.OVERDUE_INVOICE);
@@ -59,14 +60,23 @@ public class ReceiptService {
                 .documentType(documentType)
                 .issuedAt(LocalDateTime.now())
                 .build();
-        receipt.setReceiptNumber("T" + System.currentTimeMillis());
+        receipt.setReceiptNumber("TEMP");
         receipt = receiptRepository.save(receipt);
-        receipt.setReceiptNumber(String.valueOf(receipt.getId()));
+
+        // All documents for the same rental share the same base number.
+        // The first document (INVOICE) uses its own row ID; subsequent ones parse
+        // the number from the existing receipt_number (strip 1-char prefix + "111111").
+        Long docNumber = receiptRepository
+                .findFirstByEquipmentRentalIdAndReceiptNumberNotOrderByIdAsc(rental.getId(), "TEMP")
+                .map(r -> Long.parseLong(r.getReceiptNumber().substring(7)))
+                .orElse(receipt.getId());
+
+        receipt.setReceiptNumber(documentType.prefix() + "111111" + String.format("%04d", docNumber));
         receipt = receiptRepository.save(receipt);
+
         eventPublisher.publishEvent(
                 new ReceiptReadyEvent(this, rental.getId(), documentType,
-                        documentType.prefix() + receipt.getReceiptNumber())
-        );
+                        receipt.getReceiptNumber()));
         return receipt;
     }
 
@@ -81,7 +91,8 @@ public class ReceiptService {
 
     @Transactional(readOnly = true)
     public Receipt getOverdueInvoice(Long rentalId, String username) {
-        Receipt receipt = receiptRepository.findByEquipmentRentalIdAndDocumentType(rentalId, DocumentType.OVERDUE_INVOICE)
+        Receipt receipt = receiptRepository
+                .findByEquipmentRentalIdAndDocumentType(rentalId, DocumentType.OVERDUE_INVOICE)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Overdue invoice not found for rental: " + rentalId));
         checkAccess(receipt, username);
@@ -99,7 +110,8 @@ public class ReceiptService {
 
     @Transactional(readOnly = true)
     public Receipt getOverdueReceipt(Long rentalId, String username) {
-        Receipt receipt = receiptRepository.findByEquipmentRentalIdAndDocumentType(rentalId, DocumentType.OVERDUE_RECEIPT)
+        Receipt receipt = receiptRepository
+                .findByEquipmentRentalIdAndDocumentType(rentalId, DocumentType.OVERDUE_RECEIPT)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Penalty receipt not found for rental: " + rentalId));
         checkAccess(receipt, username);

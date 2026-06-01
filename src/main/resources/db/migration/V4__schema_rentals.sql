@@ -117,7 +117,7 @@ CREATE INDEX idx_pay_bill_id   ON payments(bill_id);
 
 CREATE TABLE receipts (
     id                  BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    receipt_number      VARCHAR(20)  NOT NULL UNIQUE,
+    receipt_number      VARCHAR(30)  NOT NULL,
     equipment_rental_id BIGINT       NOT NULL,
     payment_id          BIGINT       NULL,
     user_id             BIGINT       NOT NULL,
