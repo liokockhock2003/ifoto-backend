@@ -29,5 +29,5 @@ public record SubEquipmentRequest(
 
         Long pricingCategoryId,
 
-        boolean isForRent
+        Boolean isForRent
 ) {}

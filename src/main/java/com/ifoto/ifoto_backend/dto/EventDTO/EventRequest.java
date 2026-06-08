@@ -1,35 +1,35 @@
 package com.ifoto.ifoto_backend.dto.EventDTO;
 
-import com.ifoto.ifoto_backend.validation.DateRangeValid;
-import com.ifoto.ifoto_backend.validation.DateRangeValidatable;
+import com.ifoto.ifoto_backend.validation.DateTimeRangeValid;
+import com.ifoto.ifoto_backend.validation.DateTimeRangeValidatable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
-@DateRangeValid
+@DateTimeRangeValid
 public record EventRequest(
         @NotBlank(message = "Event name is required")
         String eventName,
 
         String description,
 
-        @NotNull(message = "Start date is required")
-        LocalDate startDate,
+        @NotNull(message = "Start datetime is required")
+        LocalDateTime startDatetime,
 
-        @NotNull(message = "End date is required")
-        LocalDate endDate,
+        @NotNull(message = "End datetime is required")
+        LocalDateTime endDatetime,
 
         String location,
 
         Boolean isActive,
 
-        List<Long> committeeUserIds) implements DateRangeValidatable {
+        List<Long> committeeUserIds) implements DateTimeRangeValidatable {
 
     @Override
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDateTime getStartDatetime() { return startDatetime; }
 
     @Override
-    public LocalDate getEndDate() { return endDate; }
+    public LocalDateTime getEndDatetime() { return endDatetime; }
 }

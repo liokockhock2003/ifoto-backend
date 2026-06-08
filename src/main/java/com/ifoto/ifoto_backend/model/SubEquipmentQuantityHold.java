@@ -3,7 +3,6 @@ package com.ifoto.ifoto_backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,11 +25,11 @@ public class SubEquipmentQuantityHold {
     @Column(nullable = false)
     private int quantity;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Column(name = "start_datetime", nullable = false)
+    private LocalDateTime startDatetime;
 
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Column(name = "end_datetime", nullable = false)
+    private LocalDateTime endDatetime;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

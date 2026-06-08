@@ -22,6 +22,8 @@ public interface EquipmentRentalRepository extends JpaRepository<EquipmentRental
 
     List<EquipmentRental> findByRenterOrderByCreatedAtDesc(User renter);
 
+    List<EquipmentRental> findByReviewedByOrderByApprovedAtDesc(User reviewer);
+
     @Query("""
             SELECT r FROM EquipmentRental r
             LEFT JOIN r.renter u
@@ -37,11 +39,45 @@ public interface EquipmentRentalRepository extends JpaRepository<EquipmentRental
             @Param("status") String status,
             Pageable pageable);
 
+    @Query("""
+            SELECT DISTINCT r FROM EquipmentRental r
+            LEFT JOIN r.renter u
+            JOIN r.items i
+            WHERE i.mainEquipment.mainEquipmentId = :equipmentId
+              AND (:status IS NULL OR :status = '' OR CAST(r.status AS string) = :status)
+              AND (:search IS NULL OR :search = ''
+                   OR LOWER(r.rentalNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+                   OR LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+                   OR LOWER(COALESCE(u.fullName, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+            ORDER BY r.createdAt DESC
+            """)
+    Page<EquipmentRental> searchRentalsByEquipment(
+            @Param("equipmentId") Long equipmentId,
+            @Param("search") String search,
+            @Param("status") String status,
+            Pageable pageable);
+
     List<EquipmentRental> findAllByOrderByCreatedAtDesc();
 
-    List<EquipmentRental> findByStatusAndDueReturnDateBefore(RentalStatus status, LocalDate date);
+    @Query("""
+            SELECT DISTINCT r FROM EquipmentRental r
+            JOIN r.items i
+            WHERE i.mainEquipment.mainEquipmentId = :equipmentId
+            ORDER BY r.createdAt DESC
+            """)
+    List<EquipmentRental> findByEquipmentId(@Param("equipmentId") Long equipmentId);
 
-    List<EquipmentRental> findByStatusAndApprovedStartDateLessThanEqual(RentalStatus status, LocalDate date);
+    @Query("""
+            SELECT DISTINCT r FROM EquipmentRental r
+            JOIN r.subItems s
+            WHERE s.subEquipment.subEquipmentId = :subEquipmentId
+            ORDER BY r.createdAt DESC
+            """)
+    List<EquipmentRental> findBySubEquipmentId(@Param("subEquipmentId") Long subEquipmentId);
+
+    List<EquipmentRental> findByStatusAndReturnDatetimeBefore(RentalStatus status, LocalDateTime dateTime);
+
+    List<EquipmentRental> findByStatusAndProgramStartDateLessThanEqual(RentalStatus status, LocalDate date);
 
     List<EquipmentRental> findByStatus(RentalStatus status);
 

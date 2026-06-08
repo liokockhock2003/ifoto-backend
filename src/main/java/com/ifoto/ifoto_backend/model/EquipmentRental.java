@@ -50,17 +50,17 @@ public class EquipmentRental {
     @Builder.Default
     private RentalPaymentStatus paymentStatus = RentalPaymentStatus.NONE;
 
-    @Column(name = "requested_start_date", nullable = false)
-    private LocalDate requestedStartDate;
+    @Column(name = "program_start_date", nullable = false)
+    private LocalDate programStartDate;
 
-    @Column(name = "requested_end_date", nullable = false)
-    private LocalDate requestedEndDate;
+    @Column(name = "program_end_date", nullable = false)
+    private LocalDate programEndDate;
 
-    @Column(name = "approved_start_date")
-    private LocalDate approvedStartDate;
+    @Column(name = "pickup_datetime")
+    private LocalDateTime pickupDatetime;
 
-    @Column(name = "approved_end_date")
-    private LocalDate approvedEndDate;
+    @Column(name = "return_datetime")
+    private LocalDateTime returnDatetime;
 
     @Column(name = "duration_days")
     private Integer durationDays;
@@ -87,6 +87,9 @@ public class EquipmentRental {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "picked_up_at")
+    private LocalDateTime pickedUpAt;
+
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
@@ -95,9 +98,6 @@ public class EquipmentRental {
 
     @Column(name = "returned_at")
     private LocalDateTime returnedAt;
-
-    @Column(name = "due_return_date")
-    private LocalDate dueReturnDate;
 
     @OneToMany(mappedBy = "equipmentRental", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default

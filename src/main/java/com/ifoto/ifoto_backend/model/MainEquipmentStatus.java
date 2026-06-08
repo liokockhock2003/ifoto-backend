@@ -4,7 +4,6 @@ import com.ifoto.ifoto_backend.model.enumerator.MainEquipmentStatusType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,11 +27,11 @@ public class MainEquipmentStatus {
     @Column(name = "status_type", nullable = false, length = 30)
     private MainEquipmentStatusType statusType;
 
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Column(name = "start_datetime", nullable = false)
+    private LocalDateTime startDatetime;
 
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Column(name = "end_datetime", nullable = false)
+    private LocalDateTime endDatetime;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

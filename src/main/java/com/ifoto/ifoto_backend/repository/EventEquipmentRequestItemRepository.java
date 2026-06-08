@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventEquipmentRequestItemRepository extends JpaRepository<EventEquipmentRequestItem, Long> {
@@ -17,26 +18,43 @@ public interface EventEquipmentRequestItemRepository extends JpaRepository<Event
             WHERE i.mainEquipment.mainEquipmentId = :equipmentId
               AND r.id <> :excludeRequestId
               AND r.status IN :statuses
-              AND :startDate <= r.approvedEndDate
-              AND :endDate >= r.approvedStartDate
+              AND :effectiveStart < COALESCE(r.returnDatetime, r.endDatetime)
+              AND :effectiveEnd   > COALESCE(r.pickupDatetime, r.startDatetime)
             """)
     boolean existsConflictingRequest(
             @Param("equipmentId") Long equipmentId,
             @Param("excludeRequestId") Long excludeRequestId,
             @Param("statuses") List<EventEquipmentRequestStatus> statuses,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+            @Param("effectiveStart") LocalDateTime effectiveStart,
+            @Param("effectiveEnd") LocalDateTime effectiveEnd);
 
     @Query("""
             SELECT DISTINCT i.mainEquipment.mainEquipmentId
             FROM EventEquipmentRequestItem i JOIN i.eventEquipmentRequest r
             WHERE i.mainEquipment.mainEquipmentId IN :ids
-            AND r.status IN :statuses
-            AND :today <= r.approvedEndDate
-            AND :today >= r.approvedStartDate
+              AND r.status IN :statuses
+              AND :now >= COALESCE(r.pickupDatetime, r.startDatetime)
+              AND :now <= COALESCE(r.returnDatetime, r.endDatetime)
             """)
     List<Long> findBookedEquipmentIds(
             @Param("ids") List<Long> ids,
-            @Param("today") LocalDate today,
+            @Param("now") LocalDateTime now,
+            @Param("statuses") List<EventEquipmentRequestStatus> statuses);
+
+    @Query("""
+            SELECT i.mainEquipment.mainEquipmentId, r.id,
+                   COALESCE(r.returnDatetime, r.endDatetime),
+                   COALESCE(r.pickupDatetime, r.startDatetime)
+            FROM EventEquipmentRequestItem i
+            JOIN i.eventEquipmentRequest r
+            WHERE i.mainEquipment.mainEquipmentId IN :equipmentIds
+              AND r.status IN :statuses
+              AND :startDate <= cast(COALESCE(r.returnDatetime, r.endDatetime) as date)
+              AND :endDate   >= cast(COALESCE(r.pickupDatetime, r.startDatetime) as date)
+            """)
+    List<Object[]> findEventConflictsForEquipment(
+            @Param("equipmentIds") List<Long> equipmentIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             @Param("statuses") List<EventEquipmentRequestStatus> statuses);
 }

@@ -19,8 +19,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -28,25 +27,32 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    // LinkedHashMap preserves insertion order so more-specific patterns (e.g. /rentals/*/pay)
-    // are checked before broader ones (/rentals). First match wins.
-    private static final Map<String, Bandwidth> PATH_LIMITS = new LinkedHashMap<>();
-    static {
-        // Public endpoints — keyed by client IP
-        PATH_LIMITS.put("/api/v1/auth/login",
-                Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(15)).build());
-        PATH_LIMITS.put("/api/v1/auth/forgot-password",
-                Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofHours(1)).build());
-        PATH_LIMITS.put("/api/v1/register",
-                Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofHours(1)).build());
-        PATH_LIMITS.put("/api/v1/auth/refresh",
-                Bandwidth.builder().capacity(20).refillIntervally(20, Duration.ofMinutes(15)).build());
-        // Authenticated endpoints — keyed by username (more specific pattern first)
-        PATH_LIMITS.put("/api/v1/rentals/*/pay",
-                Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(15)).build());
-        PATH_LIMITS.put("/api/v1/rentals",
-                Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofMinutes(10)).build());
+    private record PathLimit(String method, String pattern, Bandwidth bandwidth) {
     }
+
+    // More-specific patterns (e.g. /rentals/*/pay) must come before broader ones
+    // (/rentals).
+    private static final List<PathLimit> PATH_LIMITS = List.of(
+            // Public endpoints — keyed by client IP
+            new PathLimit("POST", "/api/v1/auth/login",
+                    Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(15))
+                            .build()),
+            new PathLimit("POST", "/api/v1/auth/forgot-password",
+                    Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofHours(1))
+                            .build()),
+            new PathLimit("POST", "/api/v1/register",
+                    Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofHours(1))
+                            .build()),
+            new PathLimit("POST", "/api/v1/auth/refresh",
+                    Bandwidth.builder().capacity(20).refillIntervally(20, Duration.ofMinutes(15))
+                            .build()),
+            // Authenticated endpoints — keyed by username (more specific pattern first)
+            new PathLimit("POST", "/api/v1/rentals/*/pay",
+                    Bandwidth.builder().capacity(6).refillIntervally(6, Duration.ofMinutes(15))
+                            .build()),
+            new PathLimit("POST", "/api/v1/rentals",
+                    Bandwidth.builder().capacity(6).refillIntervally(6, Duration.ofMinutes(10))
+                            .build()));
 
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(1, TimeUnit.HOURS)
@@ -55,16 +61,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
         String path = request.getRequestURI();
         String matchedPattern = null;
         Bandwidth limit = null;
 
-        for (Map.Entry<String, Bandwidth> entry : PATH_LIMITS.entrySet()) {
-            if (PATH_MATCHER.match(entry.getKey(), path)) {
-                matchedPattern = entry.getKey();
-                limit = entry.getValue();
+        for (PathLimit entry : PATH_LIMITS) {
+            if (entry.method().equalsIgnoreCase(request.getMethod())
+                    && PATH_MATCHER.match(entry.pattern(), path)) {
+                matchedPattern = entry.pattern();
+                limit = entry.bandwidth();
                 break;
             }
         }
@@ -93,6 +100,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String resolveKey(HttpServletRequest request, String matchedPattern) {
+        // Key refresh requests by cookie value — each session gets its own bucket,
+        // avoiding shared-IP exhaustion while still limiting per token.
+        if ("/api/v1/auth/refresh".equals(matchedPattern)) {
+            jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (jakarta.servlet.http.Cookie c : cookies) {
+                    if ("refreshToken".equals(c.getName()) && c.getValue() != null) {
+                        return "token:" + c.getValue() + ":" + matchedPattern;
+                    }
+                }
+            }
+            return "ip:" + extractClientIp(request) + ":" + matchedPattern;
+        }
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = auth != null
                 && auth.isAuthenticated()

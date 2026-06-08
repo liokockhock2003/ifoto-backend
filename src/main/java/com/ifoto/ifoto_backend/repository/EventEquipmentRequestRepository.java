@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventEquipmentRequestRepository extends JpaRepository<EventEquipmentRequest, Long> {
@@ -35,6 +36,22 @@ public interface EventEquipmentRequestRepository extends JpaRepository<EventEqui
             @Param("status") EventEquipmentRequestStatus status,
             Pageable pageable);
 
-    List<EventEquipmentRequest> findByStatusAndApprovedStartDateLessThanEqual(
-            EventEquipmentRequestStatus status, java.time.LocalDate date);
+    List<EventEquipmentRequest> findByStatusAndStartDatetimeLessThanEqual(
+            EventEquipmentRequestStatus status, LocalDateTime datetime);
+
+    @Query("""
+            SELECT DISTINCT r FROM EventEquipmentRequest r
+            JOIN r.items i
+            WHERE i.mainEquipment.mainEquipmentId = :equipmentId
+            ORDER BY r.createdAt DESC
+            """)
+    List<EventEquipmentRequest> findByEquipmentId(@Param("equipmentId") Long equipmentId);
+
+    @Query("""
+            SELECT DISTINCT r FROM EventEquipmentRequest r
+            JOIN r.subItems s
+            WHERE s.subEquipment.subEquipmentId = :subEquipmentId
+            ORDER BY r.createdAt DESC
+            """)
+    List<EventEquipmentRequest> findBySubEquipmentId(@Param("subEquipmentId") Long subEquipmentId);
 }

@@ -9,14 +9,17 @@ public record ReceiptResponse(
         LocalDateTime issuedAt,
         RenterInfo renter,
         RentalInfo rental,
-        PaymentInfo payment
+        PaymentInfo payment,
+        CommitteeInfo committee
 ) {
     public record RenterInfo(String username, String fullName, String email, String phoneNumber) {}
 
+    public record CommitteeInfo(String approvedBy, String signature) {}
+
     public record RentalInfo(
             String rentalNumber,
-            LocalDate approvedStartDate,
-            LocalDate approvedEndDate,
+            LocalDate programStartDate,
+            LocalDate programEndDate,
             Integer durationDays,
             Long totalBaseAmount,
             Long totalPenaltyAmount,

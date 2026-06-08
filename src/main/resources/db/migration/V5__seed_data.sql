@@ -23,9 +23,10 @@ VALUES
 ('janedoe',             'jane@ifoto.com',                '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Jane Doe',            '+601122334455', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
 ('lockeduser',          'locked@ifoto.com',              '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Locked User',         NULL,            NULL, TRUE,  TRUE,  TRUE,  5, NULL),
 ('guestuser',           'guest@ifoto.com',               '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Guest User',          NULL,            NULL, TRUE,  TRUE,  FALSE, 0, NULL),
-('eventcommittee',      'liokockhock@gmail.com',         '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Event Committee',     '+601112223333', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
+('eventcommittee',      'eventcommittee@ifoto.com',      '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Event Committee',     '+601112223333', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
 ('highcommittee',       'highcommittee@ifoto.com',       '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'High Committee',      '+601444555666', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
-('equipmentcommittee',  'equipmentcommittee@ifoto.com',  '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Equipment Committee', '+601777888999', NULL, TRUE,  TRUE,  FALSE, 0, NULL);
+('equipmentcommittee',  'liokockhock@gmail.com',         '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Equipment Committee', '+601777888999', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
+('equipmentcommittee2', 'equipmentcommittee2@ifoto.com', '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Equipment Committee 2', '+601666555444', NULL, TRUE,  TRUE,  FALSE, 0, NULL);
 
 -- ── 3. Role assignments ───────────────────────────────────────────────────────
 INSERT INTO user_roles (user_id, role_id)
@@ -56,6 +57,11 @@ INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'equipmentcommittee' AND r.name = 'ROLE_EQUIPMENT_COMMITTEE';
 INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'equipmentcommittee' AND r.name = 'ROLE_STUDENT';
+
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'equipmentcommittee2' AND r.name = 'ROLE_EQUIPMENT_COMMITTEE';
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id FROM users u, roles r WHERE u.username = 'equipmentcommittee2' AND r.name = 'ROLE_STUDENT';
 
 -- ── 4. Rental pricing categories & rates ─────────────────────────────────────
 INSERT INTO rental_pricing_category (name) VALUES
@@ -204,8 +210,7 @@ VALUES
 ('Charger Battery', 'Nikon', '["D90", "D700"]',                     'Nikon', 1,  1, 'Charger for Nikon D90 & D700 battery',            NULL, 0),
 ('Charger Battery', 'Nikon', '["D7000"]',                           'Nikon', 1,  6, 'Charger for Nikon D7000 battery',                 NULL, 0),
 -- Speedlight (linked to SPEEDLIGHT pricing below)
-('Speedlight', 'Speedlight', NULL, NULL, 1, 5, 'Speedlight unit',       NULL, 0),
-('Speedlight', 'Speedlight', NULL, NULL, 1, 3, 'Speedlight unit (new)', NULL, 0),
+('Speedlight', 'Speedlight', NULL, NULL, 1, 8, 'Speedlight unit',       NULL, 0),
 -- SD Card
 ('SD Card/CF Card', 'SD Card', NULL, NULL,  8, 4, 'SD Card 8GB',  NULL, 0),
 ('SD Card/CF Card', 'SD Card', NULL, NULL, 16, 4, 'SD Card 16GB', NULL, 0),
@@ -230,16 +235,16 @@ UPDATE sub_equipment s JOIN rental_pricing_category rpc ON rpc.name = 'SPEEDLIGH
     WHERE s.type = 'Speedlight';
 
 -- ── 7. Events ─────────────────────────────────────────────────────────────────
-INSERT INTO events (event_name, description, start_date, end_date, location, is_active) VALUES
+INSERT INTO events (event_name, description, start_datetime, end_datetime, location, is_active) VALUES
 (
     'Annual Photography Exhibition 2026',
     'A showcase of the best photography works from club members throughout the year.',
-    '2026-05-01', '2026-05-03', 'Main Hall, KL Convention Centre', TRUE
+    '2026-05-01 09:00:00', '2026-05-03 18:00:00', 'Main Hall, KL Convention Centre', TRUE
 ),
 (
     'Night Photography Workshop',
     'Hands-on workshop covering long exposure and astrophotography techniques.',
-    '2026-06-15', '2026-06-15', 'Titiwangsa Lake Garden, Kuala Lumpur', TRUE
+    '2026-06-15 20:00:00', '2026-06-15 23:59:00', 'Titiwangsa Lake Garden, Kuala Lumpur', TRUE
 );
 
 -- ── 8. Event committee assignments ───────────────────────────────────────────

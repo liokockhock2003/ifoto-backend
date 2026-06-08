@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 import java.util.List;
 
 @Slf4j
@@ -39,7 +40,7 @@ public class RentalScheduler {
     @Transactional
     public void markActiveRentals() {
         List<EquipmentRental> active = rentalRepository
-                .findByStatusAndApprovedStartDateLessThanEqual(RentalStatus.PAID, LocalDate.now());
+                .findByStatusAndProgramStartDateLessThanEqual(RentalStatus.PAID, LocalDate.now());
         if (active.isEmpty()) return;
         active.forEach(r -> {
             r.setStatus(RentalStatus.ACTIVE);
@@ -58,8 +59,8 @@ public class RentalScheduler {
     @Transactional
     public void markActiveEventRequests() {
         List<EventEquipmentRequest> active = eventRequestRepository
-                .findByStatusAndApprovedStartDateLessThanEqual(
-                        EventEquipmentRequestStatus.APPROVED, LocalDate.now());
+                .findByStatusAndStartDatetimeLessThanEqual(
+                        EventEquipmentRequestStatus.APPROVED, LocalDateTime.now());
         if (active.isEmpty()) return;
         active.forEach(r -> {
             r.setStatus(EventEquipmentRequestStatus.ACTIVE);

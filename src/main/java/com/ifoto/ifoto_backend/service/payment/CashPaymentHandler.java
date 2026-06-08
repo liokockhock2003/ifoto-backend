@@ -39,8 +39,8 @@ public class CashPaymentHandler implements PaymentMethodHandler {
 
         boolean isPenaltyPayment = rental.getStatus() == RentalStatus.RETURNED
                 && rental.getTotalPenaltyAmount() != null && rental.getTotalPenaltyAmount() > 0;
-        if (rental.getStatus() != RentalStatus.APPROVED && !isPenaltyPayment) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental must be APPROVED to initiate payment");
+        if (rental.getStatus() != RentalStatus.PICKED_UP && !isPenaltyPayment) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental must be PICKED_UP before initiating payment");
         }
 
         long chargeAmount = isPenaltyPayment ? rental.getTotalPenaltyAmount() : rental.getTotalAmount();

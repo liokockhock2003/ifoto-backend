@@ -1,23 +1,23 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
-import com.ifoto.ifoto_backend.validation.DateRangeValid;
-import com.ifoto.ifoto_backend.validation.DateRangeValidatable;
+import com.ifoto.ifoto_backend.validation.DateTimeRangeValid;
+import com.ifoto.ifoto_backend.validation.DateTimeRangeValidatable;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-@DateRangeValid
+@DateTimeRangeValid
 public record SubEquipmentQuantityHoldRequest(
         @Min(1) int quantity,
-        @NotNull LocalDate startDate,
-        @NotNull LocalDate endDate,
+        @NotNull LocalDateTime startDatetime,
+        @NotNull LocalDateTime endDatetime,
         String notes
-) implements DateRangeValidatable {
+) implements DateTimeRangeValidatable {
 
     @Override
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDateTime getStartDatetime() { return startDatetime; }
 
     @Override
-    public LocalDate getEndDate() { return endDate; }
+    public LocalDateTime getEndDatetime() { return endDatetime; }
 }

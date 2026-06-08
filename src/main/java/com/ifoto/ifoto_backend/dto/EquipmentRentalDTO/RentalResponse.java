@@ -11,10 +11,10 @@ public record RentalResponse(
         String status,
         String paymentMethod,
         String paymentStatus,
-        LocalDate requestedStartDate,
-        LocalDate requestedEndDate,
-        LocalDate approvedStartDate,
-        LocalDate approvedEndDate,
+        LocalDate programStartDate,
+        LocalDate programEndDate,
+        LocalDateTime pickupDatetime,
+        LocalDateTime returnDatetime,
         Integer durationDays,
         Long totalBaseAmount,
         Long totalPenaltyAmount,
@@ -22,7 +22,11 @@ public record RentalResponse(
         String rejectionReason,
         String committeeNotes,
         String renterNotes,
+        LocalDateTime pickedUpAt,
         List<RentalItemResponse> items,
         List<RentalSubItemResponse> subItems,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String reviewedByUsername,
+        String reviewedByFullName,
+        LocalDateTime approvedAt
 ) {}

@@ -4,19 +4,19 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE events (
-    event_id    BIGINT       AUTO_INCREMENT PRIMARY KEY,
-    event_name  VARCHAR(255) NOT NULL,
-    description TEXT,
-    start_date  DATE         NOT NULL,
-    end_date    DATE         NOT NULL,
-    location    VARCHAR(255),
-    is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    event_id        BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    event_name      VARCHAR(255) NOT NULL,
+    description     TEXT,
+    start_datetime  DATETIME     NOT NULL,
+    end_datetime    DATETIME     NOT NULL,
+    location        VARCHAR(255),
+    is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_events_is_active  ON events(is_active);
-CREATE INDEX idx_events_start_date ON events(start_date);
+CREATE INDEX idx_events_is_active       ON events(is_active);
+CREATE INDEX idx_events_start_datetime  ON events(start_datetime);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 

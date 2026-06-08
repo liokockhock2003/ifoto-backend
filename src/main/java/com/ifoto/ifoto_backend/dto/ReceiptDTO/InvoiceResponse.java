@@ -7,5 +7,8 @@ public record InvoiceResponse(
         String documentType,
         LocalDateTime issuedAt,
         ReceiptResponse.RenterInfo renter,
-        ReceiptResponse.RentalInfo rental
-) {}
+        ReceiptResponse.RentalInfo rental,
+        CommitteeInfo committee
+) {
+    public record CommitteeInfo(String bankName, String accountNo, String accountName, String signature) {}
+}

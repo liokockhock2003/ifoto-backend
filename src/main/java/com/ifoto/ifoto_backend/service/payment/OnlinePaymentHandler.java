@@ -42,8 +42,8 @@ public class OnlinePaymentHandler implements PaymentMethodHandler {
         // Allow re-calling when payment is already pending — return existing bill URL
         if (rental.getStatus() == RentalStatus.PENDING_PAYMENT) return;
 
-        if (rental.getStatus() != RentalStatus.APPROVED && !isPenaltyPayment) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental must be APPROVED to initiate payment");
+        if (rental.getStatus() != RentalStatus.PICKED_UP && !isPenaltyPayment) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rental must be PICKED_UP before initiating payment");
         }
 
         long chargeAmount = isPenaltyPayment ? rental.getTotalPenaltyAmount() : rental.getTotalAmount();

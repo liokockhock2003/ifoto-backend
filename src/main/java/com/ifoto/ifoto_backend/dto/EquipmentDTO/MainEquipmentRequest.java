@@ -27,5 +27,5 @@ public record MainEquipmentRequest(
 
         Long pricingCategoryId,
 
-        boolean isForRent
+        Boolean isForRent
 ) {}
