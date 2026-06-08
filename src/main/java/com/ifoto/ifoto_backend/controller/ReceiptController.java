@@ -78,6 +78,10 @@ public class ReceiptController {
     private InvoiceResponse toInvoiceResponse(Receipt r) {
         var rental = r.getEquipmentRental();
         var user = r.getUser();
+        var reviewer = rental.getReviewedBy();
+        InvoiceResponse.CommitteeInfo committeeInfo = (reviewer != null && reviewer.getBankName() != null)
+                ? new InvoiceResponse.CommitteeInfo(reviewer.getBankName(), reviewer.getAccountNo(), reviewer.getFullName(), reviewer.getSignature())
+                : null;
         return new InvoiceResponse(
                 r.getDocumentType().prefix() + r.getReceiptNumber(),
                 r.getDocumentType().name(),
@@ -85,15 +89,16 @@ public class ReceiptController {
                 new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
                 new ReceiptResponse.RentalInfo(
                         rental.getRentalNumber(),
-                        rental.getApprovedStartDate(),
-                        rental.getApprovedEndDate(),
+                        rental.getProgramStartDate(),
+                        rental.getProgramEndDate(),
                         rental.getDurationDays(),
                         rental.getTotalBaseAmount(),
                         rental.getTotalPenaltyAmount(),
                         rental.getTotalAmount(),
                         rental.getItems().stream().map(this::toItemResponse).toList(),
                         rental.getSubItems().stream().map(this::toSubItemResponse).toList()
-                )
+                ),
+                committeeInfo
         );
     }
 
@@ -101,14 +106,18 @@ public class ReceiptController {
         var rental = r.getEquipmentRental();
         var payment = r.getPayment();
         var user = r.getUser();
+        var reviewer = rental.getReviewedBy();
+        ReceiptResponse.CommitteeInfo committeeInfo = reviewer != null
+                ? new ReceiptResponse.CommitteeInfo(reviewer.getFullName(), reviewer.getSignature())
+                : null;
         return new ReceiptResponse(
                 r.getDocumentType().prefix() + r.getReceiptNumber(),
                 r.getIssuedAt(),
                 new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
                 new ReceiptResponse.RentalInfo(
                         rental.getRentalNumber(),
-                        rental.getApprovedStartDate(),
-                        rental.getApprovedEndDate(),
+                        rental.getProgramStartDate(),
+                        rental.getProgramEndDate(),
                         rental.getDurationDays(),
                         rental.getTotalBaseAmount(),
                         rental.getTotalPenaltyAmount(),
@@ -121,7 +130,8 @@ public class ReceiptController {
                         payment.getPaidAt(),
                         payment.getTransactionId(),
                         payment.getPaymentChannel()
-                )
+                ),
+                committeeInfo
         );
     }
 

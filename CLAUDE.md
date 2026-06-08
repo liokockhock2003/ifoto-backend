@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Tech Stack
+
+- **Java 21**, **Spring Boot 3.5.11**
+- **MySQL** + **Flyway** (schema migrations, `ddl-auto=none`)
+- **Spring Security** + JWT (jjwt 0.12.6, HS256)
+- **Lombok**, Jakarta Validation, BCrypt (strength 12)
+- **Billplz** (payment gateway), **Resend** (email via SMTP bridge)
+- **Bucket4j + Caffeine** (rate limiting — active)
+- **SpringDoc OpenAPI 2.8.8** (Swagger UI, disabled in prod)
+
 ## Commands
 
 ```bash
@@ -66,7 +76,7 @@ The dev profile reads these from the environment (no `.env` file checked in):
 - **config** — `SecurityConfig` (filter chain, route authorization), `AppConfig` (BCrypt strength 12, `AuthenticationManager`, `@EnableScheduling`, `@EnableAsync`), `WebConfig` (CORS), `BillplzConfig` (Billplz REST client), `GlobalExceptionHandler`.
 - **security** (additional) — `RateLimitFilter`: `OncePerRequestFilter` using Bucket4j (in-memory). Runs after `JwtAuthenticationFilter`. Public endpoints keyed by client IP, authenticated endpoints keyed by username. Limits: login 5/15 min, forgot-password 3/hr, register 5/hr, refresh 20/15 min, POST rentals 3/10 min, POST rentals/\*/pay 5/15 min. Returns HTTP 429 with `Retry-After` header on exhaustion.
 - **scheduler** — `RentalScheduler`: daily cron at midnight to auto-mark rentals `ACTIVE`/`OVERDUE` and event equipment requests `ACTIVE`. Also runs all three jobs on startup via `@PostConstruct` to catch up any missed midnight tick during restarts/redeploys.
-- **validation** — Custom constraint annotations (`@DateRangeValid`, `@SubEquipmentQuantityValid`) with corresponding validators; `DateRangeValidatable` marker interface.
+- **validation** — Custom constraint annotations: `@DateRangeValid` (date-only range, with `DateRangeValidatable` marker interface), `@DateTimeRangeValid` (datetime range, with `DateTimeRangeValidatable` marker interface), `@SubEquipmentQuantityValid` (borrow quantity ≤ total hold). `EventDateRangeValidator` is a specialised variant for event datetime ranges.
 - **exception** — `TokenException` with enum reasons: `MISSING`, `INVALID`, `ALREADY_USED`, `EXPIRED`.
 - **event** — `ReceiptReadyEvent`: Spring `ApplicationEvent` published by `ReceiptService` after each receipt/invoice is persisted; consumed by `RentalNotificationService` via `@TransactionalEventListener(AFTER_COMMIT)`.
 - **service/MailService** — All send methods are `@Async` (fire-and-forget; SMTP failure never blocks the caller). Sends HTML emails via `MimeMessageHelper`. Provider: Resend via SMTP bridge (`smtp.resend.com:587`). For local testing use Mailpit (`docker run -p 1025:1025 -p 8025:8025 axllent/mailpit`) with `MAIL_HOST=localhost MAIL_PORT=1025 MAIL_SMTP_AUTH=false MAIL_SMTP_STARTTLS=false`.
@@ -123,10 +133,14 @@ The dev profile reads these from the environment (no `.env` file checked in):
 - `RentalCategory`, `RentalPricing` — pricing tiers (e.g. member vs non-member rates)
 - `Payment`, `Receipt` — Billplz payment records and generated receipts (invoices + receipts, with `DocumentType`)
 
-**Enumerators:** `RentalStatus`, `RentalPaymentMethod`, `RentalPaymentStatus`, `RentalPricingCategory`, `EventEquipmentRequestStatus`, `MainEquipmentStatusType`, `PaymentType`, `PaymentRecordStatus`, `MemberType`, `DocumentType`
+**Enumerators:** `RentalStatus`, `RentalPaymentMethod`, `RentalPaymentStatus`, `RentalPricingCategory`, `EventEquipmentRequestStatus`, `MainEquipmentStatusType`, `EquipmentCondition`, `PaymentType`, `PaymentRecordStatus`, `MemberType`, `DocumentType`
+
+**Converter:** `StringListConverter` — JPA `@Converter` that serialises `List<String>` as a JSON array column (used by `SubEquipment.cameraModel`).
 
 ### Rental status lifecycle
 `PENDING_REVIEW` → `APPROVED` / `REJECTED` → `PENDING_PAYMENT` → `PAID` → `ACTIVE` → `RETURNED`  
+`PAID → PICKED_UP` (equipment handed over, sets `picked_up_at` timestamp; committee marks via `PATCH /{id}/mark-picked-up`)  
+`PAID/PICKED_UP → ACTIVE` (auto via scheduler at midnight when `program_start_date` is reached, or manually via `PATCH /{id}/mark-active`)  
 Side paths: `CANCELLED` (anytime before ACTIVE), `OVERDUE` (from ACTIVE when due date passes)
 
 ### Event equipment request lifecycle
@@ -137,7 +151,7 @@ Side path: `CANCELLED`
 `ReceiptService.buildAndSave()` publishes a `ReceiptReadyEvent` after each document is persisted. `RentalNotificationService` listens via `@Async @TransactionalEventListener(AFTER_COMMIT)` and pushes a `receipt-ready` SSE event to all active emitters for that rental. Emitters are registered when the frontend calls `GET /api/v1/receipts/events/rental/{rentalId}` and cleaned up on timeout (3 min), completion, or error.
 
 ### Payment flow
-- `POST /api/v1/rentals/{id}/pay` → `PaymentService` selects handler via `PaymentMethodHandler` strategy (`CashPaymentHandler` or `OnlinePaymentHandler`).
+- `POST /api/v1/rentals/{id}/pay` → `PaymentService` selects handler via `PaymentMethodHandler` strategy (`CashPaymentHandler`, `OnlinePaymentHandler`, or `BankTransferPaymentHandler`).
 - Online payments: creates a Billplz bill via `BillplzService`, returns redirect URL.
 - Billplz POSTs callback to `/api/v1/payments/callback`; `BillplzXSignatureService` verifies HMAC-SHA256 signature before updating rental status.
 - Amounts stored in **cents** (integer) internally; `ReportingService` converts to `BigDecimal` for API responses.
@@ -160,6 +174,9 @@ Side path: `CANCELLED`
 Flyway migrations live in `src/main/resources/db/migration/` using the `V{n}__description.sql` naming convention. Never modify existing migration files — always add a new version. Latest migration: `V5__seed_data.sql`.
 
 ### Profiles
-- `dev` (default) — verbose SQL logging, CORS allows `localhost:5173`, `localhost:3000`, `127.0.0.1:5173`.
+- `dev` (default) — verbose SQL logging, CORS allows `localhost:5173`, `localhost:3000`, `127.0.0.1:5173`. Sets `app.mail.dev-override-recipient` so all outbound emails are redirected to the configured address (avoids accidental sends during development).
 - `prod` — configure via `application-prod.properties`; CORS restricted to `https://ifoto-frontend.vercel.app/`, SQL logging disabled, API docs disabled.
 - `test` — `application-test.properties`; CORS allows `https://staging-ifoto-frontend.vercel.app`.
+
+### Other notable config
+- `app.rental.buffer-minutes=60` — Availability check buffer: equipment is considered booked `60 min` before/after a rental window to allow pickup/return logistics.

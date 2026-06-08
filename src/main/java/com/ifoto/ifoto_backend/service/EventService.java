@@ -43,8 +43,8 @@ public class EventService {
         Event event = Event.builder()
                 .eventName(request.eventName())
                 .description(request.description())
-                .startDate(request.startDate())
-                .endDate(request.endDate())
+                .startDatetime(request.startDatetime())
+                .endDatetime(request.endDatetime())
                 .location(request.location())
                 .isActive(request.isActive() != null ? request.isActive() : true)
                 .eventCommittee(new ArrayList<>())
@@ -68,8 +68,8 @@ public class EventService {
 
         event.setEventName(request.eventName());
         event.setDescription(request.description());
-        event.setStartDate(request.startDate());
-        event.setEndDate(request.endDate());
+        event.setStartDatetime(request.startDatetime());
+        event.setEndDatetime(request.endDatetime());
         event.setLocation(request.location());
         if (request.isActive() != null) {
             event.setActive(request.isActive());
@@ -141,8 +141,8 @@ public class EventService {
                 event.getEventId(),
                 event.getEventName(),
                 event.getDescription(),
-                event.getStartDate(),
-                event.getEndDate(),
+                event.getStartDatetime(),
+                event.getEndDatetime(),
                 event.getLocation(),
                 event.isActive(),
                 committee);

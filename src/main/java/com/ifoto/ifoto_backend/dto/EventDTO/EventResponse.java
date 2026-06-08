@@ -1,14 +1,14 @@
 package com.ifoto.ifoto_backend.dto.EventDTO;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record EventResponse(
         Long eventId,
         String eventName,
         String description,
-        LocalDate startDate,
-        LocalDate endDate,
+        LocalDateTime startDatetime,
+        LocalDateTime endDatetime,
         String location,
         boolean isActive,
         List<CommitteeMemberResponse> eventCommittee) {

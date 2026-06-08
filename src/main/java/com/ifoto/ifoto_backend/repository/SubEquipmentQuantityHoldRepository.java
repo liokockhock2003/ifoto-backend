@@ -5,37 +5,62 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SubEquipmentQuantityHoldRepository extends JpaRepository<SubEquipmentQuantityHold, Long> {
 
-    List<SubEquipmentQuantityHold> findBySubEquipmentSubEquipmentIdOrderByStartDateAsc(Long subEquipmentId);
+    List<SubEquipmentQuantityHold> findBySubEquipmentSubEquipmentIdOrderByStartDatetimeAsc(Long subEquipmentId);
 
-    @Query("SELECT h FROM SubEquipmentQuantityHold h WHERE h.subEquipment.subEquipmentId IN :ids AND h.endDate >= :today ORDER BY h.startDate ASC")
+    @Query("SELECT h FROM SubEquipmentQuantityHold h WHERE h.subEquipment.subEquipmentId IN :ids ORDER BY h.startDatetime ASC")
+    List<SubEquipmentQuantityHold> findAllBySubEquipmentIds(@Param("ids") List<Long> ids);
+
+    @Query("SELECT h FROM SubEquipmentQuantityHold h WHERE h.subEquipment.subEquipmentId IN :ids AND h.endDatetime >= :now ORDER BY h.startDatetime ASC")
     List<SubEquipmentQuantityHold> findUpcomingBySubEquipmentIds(
             @Param("ids") List<Long> ids,
-            @Param("today") LocalDate today);
+            @Param("now") LocalDateTime now);
 
     @Query("""
         SELECT COALESCE(SUM(h.quantity), 0) FROM SubEquipmentQuantityHold h
         WHERE h.subEquipment.subEquipmentId = :subEquipmentId
-        AND :startDate <= h.endDate AND :endDate >= h.startDate
+        AND :startDatetime < h.endDatetime AND :endDatetime > h.startDatetime
         AND h.id <> :excludeHoldId
     """)
     int sumHeldQuantity(
             @Param("subEquipmentId") Long subEquipmentId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
+            @Param("startDatetime") LocalDateTime startDatetime,
+            @Param("endDatetime") LocalDateTime endDatetime,
             @Param("excludeHoldId") Long excludeHoldId);
 
     @Query("""
         SELECT h.subEquipment.subEquipmentId, COALESCE(SUM(h.quantity), 0)
         FROM SubEquipmentQuantityHold h
-        WHERE :startDate <= h.endDate AND :endDate >= h.startDate
+        WHERE :startDatetime < h.endDatetime AND :endDatetime > h.startDatetime
         GROUP BY h.subEquipment.subEquipmentId
     """)
     List<Object[]> sumHeldQuantityPerSubEquipment(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+            @Param("startDatetime") LocalDateTime startDatetime,
+            @Param("endDatetime") LocalDateTime endDatetime);
+
+    @Query("""
+        SELECT h.subEquipment.subEquipmentId, h.id, h.endDatetime, SUM(h.quantity)
+        FROM SubEquipmentQuantityHold h
+        WHERE h.subEquipment.subEquipmentId IN :ids
+        AND cast(h.endDatetime as date) = cast(:boundaryDate as date)
+        GROUP BY h.subEquipment.subEquipmentId, h.id, h.endDatetime
+    """)
+    List<Object[]> findBoundaryEndQuantities(
+            @Param("ids") List<Long> ids,
+            @Param("boundaryDate") LocalDateTime boundaryDate);
+
+    @Query("""
+        SELECT h.subEquipment.subEquipmentId, h.id, h.startDatetime, SUM(h.quantity)
+        FROM SubEquipmentQuantityHold h
+        WHERE h.subEquipment.subEquipmentId IN :ids
+        AND cast(h.startDatetime as date) = cast(:boundaryDate as date)
+        GROUP BY h.subEquipment.subEquipmentId, h.id, h.startDatetime
+    """)
+    List<Object[]> findBoundaryStartQuantities(
+            @Param("ids") List<Long> ids,
+            @Param("boundaryDate") LocalDateTime boundaryDate);
 }

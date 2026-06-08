@@ -18,5 +18,6 @@ public record MainEquipmentResponse(
         Long pricingCategoryId,
         RentalPricingCategory pricingCategory,
         boolean isForRent,
-        List<MainEquipmentStatusResponse> dateStatuses
+        List<MainEquipmentStatusResponse> dateStatuses,
+        List<EquipmentBoundaryNote> boundaryNotes
 ) {}

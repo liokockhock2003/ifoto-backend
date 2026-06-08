@@ -6,6 +6,7 @@ import com.ifoto.ifoto_backend.model.Payment;
 import com.ifoto.ifoto_backend.model.Receipt;
 import com.ifoto.ifoto_backend.model.User;
 import com.ifoto.ifoto_backend.model.enumerator.PaymentRecordStatus;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPaymentMethod;
 import com.ifoto.ifoto_backend.model.enumerator.RentalPaymentStatus;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import com.ifoto.ifoto_backend.repository.PaymentRepository;
@@ -65,7 +66,7 @@ public class PaymentService {
             } else {
                 rental.setPaidAt(LocalDateTime.now());
                 rental.setPaymentStatus(RentalPaymentStatus.ONLINE_PAID);
-                if (rental.getApprovedStartDate() != null && !rental.getApprovedStartDate().isAfter(LocalDate.now())) {
+                if (rental.getProgramStartDate() != null && !rental.getProgramStartDate().isAfter(LocalDate.now())) {
                     rental.setStatus(RentalStatus.ACTIVE);
                     rental.setActiveAt(LocalDateTime.now());
                 } else {
@@ -129,8 +130,11 @@ public class PaymentService {
             rental.setPaymentStatus(RentalPaymentStatus.PENALTY_PAID);
         } else {
             rental.setPaidAt(LocalDateTime.now());
-            rental.setPaymentStatus(RentalPaymentStatus.CASH_PAID);
-            if (rental.getApprovedStartDate() != null && !rental.getApprovedStartDate().isAfter(LocalDate.now())) {
+            RentalPaymentStatus paidStatus = rental.getPaymentMethod() == RentalPaymentMethod.BANK_TRANSFER
+                    ? RentalPaymentStatus.BANK_TRANSFER_PAID
+                    : RentalPaymentStatus.CASH_PAID;
+            rental.setPaymentStatus(paidStatus);
+            if (rental.getProgramStartDate() != null && !rental.getProgramStartDate().isAfter(LocalDate.now())) {
                 rental.setStatus(RentalStatus.ACTIVE);
                 rental.setActiveAt(LocalDateTime.now());
             } else {

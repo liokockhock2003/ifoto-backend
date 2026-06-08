@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailRequest;
+import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateResponse;
 import com.ifoto.ifoto_backend.model.Role;
@@ -11,11 +13,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -200,6 +204,30 @@ public class UserService {
         if (removed) {
             userRepository.save(user);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public BankDetailResponse getMyBankDetail(String username) {
+        User user = getByUsername(username);
+        if (user.getBankName() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No bank details found");
+        }
+        return toBankDetailResponse(user);
+    }
+
+    @Transactional
+    public BankDetailResponse upsertMyBankDetail(String username, BankDetailRequest req) {
+        User user = getByUsername(username);
+        user.setBankName(req.bankName());
+        user.setAccountNo(req.accountNo());
+        user.setSignature(req.signature());
+        userRepository.save(user);
+        return toBankDetailResponse(user);
+    }
+
+    private BankDetailResponse toBankDetailResponse(User user) {
+        return new BankDetailResponse(user.getBankName(), user.getAccountNo(),
+                user.getFullName(), user.getUsername(), user.getSignature());
     }
 
     @Transactional

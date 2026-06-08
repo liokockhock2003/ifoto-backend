@@ -6,6 +6,6 @@ public record SubEquipmentBookedRange(
         Long subEquipmentId,
         LocalDate startDate,
         LocalDate endDate,
-        int committedQuantity,
-        boolean pending
+        Integer committedQuantity,
+        Boolean pending
 ) {}

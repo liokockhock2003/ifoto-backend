@@ -19,5 +19,6 @@ public record SubEquipmentResponse(
         Long pricingCategoryId,
         RentalPricingCategory pricingCategoryName,
         boolean isForRent,
-        List<SubEquipmentQuantityHoldResponse> quantityHolds
+        List<SubEquipmentQuantityHoldResponse> quantityHolds,
+        List<SubEquipmentBoundaryNote> boundaryNotes
 ) {}

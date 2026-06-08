@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.controller;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse;
 import com.ifoto.ifoto_backend.dto.EventEquipmentRequestDTO.*;
 import com.ifoto.ifoto_backend.model.EventEquipmentRequest;
 import com.ifoto.ifoto_backend.model.EventEquipmentRequestItem;
@@ -30,7 +31,7 @@ public class EventEquipmentRequestController {
     public ResponseEntity<EquipmentRequestResponse> submitRequest(
             @Valid @RequestBody EquipmentRequestRequest req, Authentication auth) {
         EventEquipmentRequest request = requestService.submitRequest(
-                req.eventId(), req.equipmentIds(), req.startDate(), req.endDate(),
+                req.eventId(), req.equipmentIds(),
                 req.notes(), req.subEquipmentEntries(), auth.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(request));
     }
@@ -50,6 +51,20 @@ public class EventEquipmentRequestController {
 
     // ── Equipment Committee endpoints ─────────────────────────────────────────
 
+    @GetMapping("/equipment/{equipmentId}")
+    public ResponseEntity<List<EquipmentRequestResponse>> getRequestsByEquipment(
+            @PathVariable Long equipmentId) {
+        return ResponseEntity.ok(requestService.getRequestsByEquipment(equipmentId)
+                .stream().map(this::toResponse).toList());
+    }
+
+    @GetMapping("/sub-equipment/{subEquipmentId}")
+    public ResponseEntity<List<EquipmentRequestResponse>> getRequestsBySubEquipment(
+            @PathVariable Long subEquipmentId) {
+        return ResponseEntity.ok(requestService.getRequestsBySubEquipment(subEquipmentId)
+                .stream().map(this::toResponse).toList());
+    }
+
     @GetMapping
     public ResponseEntity<Page<EquipmentRequestResponse>> getAllRequests(
             @RequestParam(defaultValue = "") String search,
@@ -68,8 +83,45 @@ public class EventEquipmentRequestController {
         EventEquipmentRequest request = requestService.reviewRequest(
                 id, req.action(),
                 req.equipmentIds(), req.subEquipmentEntries(),
-                req.rejectionReason(), req.committeeNotes(), auth.getName());
+                req.rejectionReason(), req.committeeNotes(),
+                req.pickupDatetime(), req.returnDatetime(), auth.getName());
         return ResponseEntity.ok(toResponse(request));
+    }
+
+    @PatchMapping("/{id}/mark-picked-up")
+    public ResponseEntity<EquipmentRequestResponse> markPickedUp(
+            @PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(toResponse(requestService.markPickedUp(id, auth.getName())));
+    }
+
+    @PatchMapping("/{id}/logistics")
+    public ResponseEntity<EquipmentRequestResponse> updateLogistics(
+            @PathVariable Long id,
+            @Valid @RequestBody EquipmentRequestLogisticsRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(toResponse(
+                requestService.updateLogistics(id, auth.getName(),
+                        req.pickupDatetime(), req.returnDatetime())));
+    }
+
+    @PatchMapping("/{id}/equipment")
+    public ResponseEntity<EquipmentRequestResponse> updateEquipment(
+            @PathVariable Long id,
+            @Valid @RequestBody EquipmentRequestEquipmentUpdateRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(toResponse(
+                requestService.updateEquipment(id, auth.getName(),
+                        req.equipmentIds(), req.subEquipmentEntries())));
+    }
+
+    @GetMapping("/{id}/equipment-schedules")
+    public ResponseEntity<EquipmentSchedulesResponse> getEquipmentSchedules(
+            @PathVariable Long id,
+            @RequestParam(required = false) List<Long> mainEquipmentIds,
+            @RequestParam(required = false) List<Long> subEquipmentIds,
+            Authentication auth) {
+        return ResponseEntity.ok(requestService.getEquipmentSchedules(
+                id, mainEquipmentIds, subEquipmentIds, auth.getName()));
     }
 
     @PatchMapping("/{id}/mark-returned")
@@ -93,18 +145,21 @@ public class EventEquipmentRequestController {
                 r.getEvent().getEventName(),
                 r.getRequestedBy().getUsername(),
                 r.getReviewedBy() != null ? r.getReviewedBy().getUsername() : null,
+                r.getReviewedBy() != null ? r.getReviewedBy().getFullName() : null,
                 r.getStatus().name(),
-                r.getRequestedStartDate(),
-                r.getRequestedEndDate(),
-                r.getApprovedStartDate(),
-                r.getApprovedEndDate(),
+                r.getStartDatetime(),
+                r.getEndDatetime(),
+                r.getPickupDatetime(),
+                r.getReturnDatetime(),
                 r.getDurationDays(),
                 r.getRejectionReason(),
                 r.getCommitteeNotes(),
                 r.getRequesterNotes(),
                 r.getItems().stream().map(this::toItemResponse).toList(),
                 r.getSubItems().stream().map(this::toSubItemResponse).toList(),
-                r.getCreatedAt()
+                r.getCreatedAt(),
+                r.getApprovedAt(),
+                r.getPickedUpAt()
         );
     }
 

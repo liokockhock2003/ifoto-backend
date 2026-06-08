@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.controller;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse;
 import com.ifoto.ifoto_backend.dto.EquipmentRentalDTO.*;
 import com.ifoto.ifoto_backend.dto.PaymentDTO.InitiatePaymentRequest;
 import com.ifoto.ifoto_backend.dto.PaymentDTO.PaymentResponse;
@@ -47,9 +48,16 @@ public class EquipmentRentalController {
                 .stream().map(this::toResponse).toList());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<RentalResponse> getRental(@PathVariable Long id, Authentication auth) {
-        return ResponseEntity.ok(toResponse(rentalService.getRental(id, auth.getName())));
+    @GetMapping("/equipment/{equipmentId}")
+    public ResponseEntity<List<RentalResponse>> getRentalsByEquipment(@PathVariable Long equipmentId) {
+        return ResponseEntity.ok(rentalService.getRentalsByEquipment(equipmentId)
+                .stream().map(this::toResponse).toList());
+    }
+
+    @GetMapping("/sub-equipment/{subEquipmentId}")
+    public ResponseEntity<List<RentalResponse>> getRentalsBySubEquipment(@PathVariable Long subEquipmentId) {
+        return ResponseEntity.ok(rentalService.getRentalsBySubEquipment(subEquipmentId)
+                .stream().map(this::toResponse).toList());
     }
 
     @PostMapping("/{id}/pay")
@@ -68,7 +76,7 @@ public class EquipmentRentalController {
                 payment != null ? payment.getBillId() : null,
                 "ONLINE".equalsIgnoreCase(req.paymentMethod())
                         ? "Proceed to payment URL"
-                        : "Cash payment initiated — await committee confirmation"
+                        : "Payment initiated — await committee confirmation"
         ));
     }
 
@@ -78,6 +86,12 @@ public class EquipmentRentalController {
     }
 
     // ── Committee endpoints ───────────────────────────────────────────────────
+
+    @GetMapping("/my-approvals")
+    public ResponseEntity<List<RentalResponse>> getMyApprovals(Authentication auth) {
+        return ResponseEntity.ok(rentalService.getMyApprovals(auth.getName())
+                .stream().map(this::toResponse).toList());
+    }
 
     @GetMapping
     public ResponseEntity<Page<RentalResponse>> getAllRentals(
@@ -95,14 +109,38 @@ public class EquipmentRentalController {
             @Valid @RequestBody RentalReviewRequest req,
             Authentication auth) {
         EquipmentRental rental = rentalService.reviewRental(
-                id, req.action(),
-                req.equipmentIds(), req.rejectionReason(), req.committeeNotes(), auth.getName());
+                id, req.action(), req.equipmentIds(), req.subEquipmentEntries(),
+                req.rejectionReason(), req.committeeNotes(), auth.getName(),
+                req.pickupDatetime(), req.returnDatetime());
         return ResponseEntity.ok(toResponse(rental));
     }
 
-    @PatchMapping("/{id}/confirm-cash")
-    public ResponseEntity<RentalResponse> confirmCash(@PathVariable Long id, Authentication auth) {
-        return ResponseEntity.ok(toResponse(rentalService.confirmCash(id, auth.getName())));
+    @PatchMapping("/{id}/mark-picked-up")
+    public ResponseEntity<RentalResponse> markPickedUp(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(toResponse(rentalService.markPickedUp(id, auth.getName())));
+    }
+
+    @PatchMapping("/{id}/logistics")
+    public ResponseEntity<RentalResponse> updateLogistics(
+            @PathVariable Long id,
+            @Valid @RequestBody RentalLogisticsRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(toResponse(
+                rentalService.updateLogistics(id, auth.getName(), req.pickupDatetime(), req.returnDatetime())));
+    }
+
+    @PatchMapping("/{id}/equipment")
+    public ResponseEntity<RentalResponse> updateEquipment(
+            @PathVariable Long id,
+            @Valid @RequestBody RentalEquipmentUpdateRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(toResponse(
+                rentalService.updateEquipment(id, auth.getName(), req.equipmentIds(), req.subEquipmentEntries())));
+    }
+
+    @PatchMapping("/{id}/confirm-manual-payment")
+    public ResponseEntity<RentalResponse> confirmManualPayment(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(toResponse(rentalService.confirmManualPayment(id, auth.getName())));
     }
 
     @PatchMapping("/{id}/mark-active")
@@ -127,6 +165,16 @@ public class EquipmentRentalController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{id}/equipment-schedules")
+    public ResponseEntity<EquipmentSchedulesResponse> getEquipmentSchedules(
+            @PathVariable Long id,
+            @RequestParam(required = false) List<Long> mainEquipmentIds,
+            @RequestParam(required = false) List<Long> subEquipmentIds,
+            Authentication auth) {
+        return ResponseEntity.ok(rentalService.getEquipmentSchedules(
+                id, mainEquipmentIds, subEquipmentIds, auth.getName()));
+    }
+
     // ── Mappers ───────────────────────────────────────────────────────────────
 
     private RentalResponse toResponse(EquipmentRental r) {
@@ -137,10 +185,10 @@ public class EquipmentRentalController {
                 r.getStatus().name(),
                 r.getPaymentMethod().name(),
                 r.getPaymentStatus().name(),
-                r.getRequestedStartDate(),
-                r.getRequestedEndDate(),
-                r.getApprovedStartDate(),
-                r.getApprovedEndDate(),
+                r.getProgramStartDate(),
+                r.getProgramEndDate(),
+                r.getPickupDatetime(),
+                r.getReturnDatetime(),
                 r.getDurationDays(),
                 r.getTotalBaseAmount(),
                 r.getTotalPenaltyAmount(),
@@ -148,9 +196,13 @@ public class EquipmentRentalController {
                 r.getRejectionReason(),
                 r.getCommitteeNotes(),
                 r.getRenterNotes(),
+                r.getPickedUpAt(),
                 r.getItems().stream().map(this::toItemResponse).toList(),
                 r.getSubItems().stream().map(this::toSubItemResponse).toList(),
-                r.getCreatedAt()
+                r.getCreatedAt(),
+                r.getReviewedBy() != null ? r.getReviewedBy().getUsername() : null,
+                r.getReviewedBy() != null ? r.getReviewedBy().getFullName() : null,
+                r.getApprovedAt()
         );
     }
 

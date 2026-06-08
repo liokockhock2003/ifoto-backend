@@ -4,7 +4,6 @@ import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,17 +40,11 @@ public class EventEquipmentRequest {
     @Column(nullable = false)
     private EventEquipmentRequestStatus status;
 
-    @Column(name = "requested_start_date", nullable = false)
-    private LocalDate requestedStartDate;
+    @Column(name = "start_datetime", nullable = false)
+    private LocalDateTime startDatetime;
 
-    @Column(name = "requested_end_date", nullable = false)
-    private LocalDate requestedEndDate;
-
-    @Column(name = "approved_start_date")
-    private LocalDate approvedStartDate;
-
-    @Column(name = "approved_end_date")
-    private LocalDate approvedEndDate;
+    @Column(name = "end_datetime", nullable = false)
+    private LocalDateTime endDatetime;
 
     @Column(name = "duration_days")
     private Integer durationDays;
@@ -65,17 +58,23 @@ public class EventEquipmentRequest {
     @Column(name = "requester_notes", columnDefinition = "TEXT")
     private String requesterNotes;
 
+    @Column(name = "pickup_datetime")
+    private LocalDateTime pickupDatetime;
+
+    @Column(name = "return_datetime")
+    private LocalDateTime returnDatetime;
+
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
+
+    @Column(name = "picked_up_at")
+    private LocalDateTime pickedUpAt;
 
     @Column(name = "active_at")
     private LocalDateTime activeAt;
 
     @Column(name = "returned_at")
     private LocalDateTime returnedAt;
-
-    @Column(name = "due_return_date")
-    private LocalDate dueReturnDate;
 
     @OneToMany(mappedBy = "eventEquipmentRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default

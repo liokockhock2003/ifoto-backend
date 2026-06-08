@@ -22,16 +22,24 @@ public class EquipmentController {
     // ── Read ──────────────────────────────────────────────────────────────────
 
     @GetMapping
-    public ResponseEntity<EquipmentListResponse> getAllEquipment() {
-        return ResponseEntity.ok(equipmentService.getAllEquipment());
+    public ResponseEntity<EquipmentListResponse> getAllEquipment(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long excludeRentalId) {
+        long exclude = excludeRentalId != null ? excludeRentalId : 0L;
+        return ResponseEntity.ok(startDate != null && endDate != null
+                ? equipmentService.getAllEquipment(startDate, endDate, exclude)
+                : equipmentService.getAllEquipment());
     }
 
     @GetMapping("/available")
     public ResponseEntity<EquipmentListResponse> getAvailableEquipment(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam String context) {
-        return ResponseEntity.ok(equipmentService.getAvailableEquipment(startDate, endDate, context));
+            @RequestParam String context,
+            @RequestParam(required = false) Long excludeRentalId) {
+        long exclude = excludeRentalId != null ? excludeRentalId : 0L;
+        return ResponseEntity.ok(equipmentService.getAvailableEquipment(startDate, endDate, context, exclude));
     }
 
     // ── Main Equipment ────────────────────────────────────────────────────────

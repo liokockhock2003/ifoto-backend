@@ -52,6 +52,12 @@ public class ReceiptService {
         return buildAndSave(rental, payment, DocumentType.OVERDUE_RECEIPT);
     }
 
+    @Transactional
+    public void deleteInvoice(Long rentalId) {
+        receiptRepository.findByEquipmentRentalIdAndDocumentType(rentalId, DocumentType.INVOICE)
+                .ifPresent(receiptRepository::delete);
+    }
+
     private Receipt buildAndSave(EquipmentRental rental, Payment payment, DocumentType documentType) {
         Receipt receipt = Receipt.builder()
                 .equipmentRental(rental)
