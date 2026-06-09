@@ -1,13 +1,11 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
-import com.ifoto.ifoto_backend.validation.SubEquipmentQuantityValid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-@SubEquipmentQuantityValid
 public record SubEquipmentRequest(
         @Size(max = 100)
         String type,
@@ -27,11 +25,9 @@ public record SubEquipmentRequest(
         @Min(value = 0, message = "Total quantity cannot be negative")
         int totalQuantity,
 
-        @Min(value = 0, message = "Used quantity cannot be negative")
-        int usedQuantity,
+        String notes,
 
-        @Min(value = 0, message = "Available quantity cannot be negative")
-        int availableQuantity,
+        Long pricingCategoryId,
 
-        String notes
+        Boolean isForRent
 ) {}

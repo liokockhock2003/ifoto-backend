@@ -1,6 +1,9 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.EquipmentCondition;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+
+import java.util.List;
 
 public record MainEquipmentResponse(
         Long mainEquipmentId,
@@ -9,10 +12,12 @@ public record MainEquipmentResponse(
         String brand,
         String model,
         String serialNumber,
-        String condition,
+        EquipmentCondition condition,
         String status,
-        String notes,
+        String problems,
         Long pricingCategoryId,
         RentalPricingCategory pricingCategory,
-        boolean isForRent
+        boolean isForRent,
+        List<MainEquipmentStatusResponse> dateStatuses,
+        List<EquipmentBoundaryNote> boundaryNotes
 ) {}

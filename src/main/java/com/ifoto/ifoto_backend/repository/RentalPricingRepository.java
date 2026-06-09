@@ -1,8 +1,9 @@
 package com.ifoto.ifoto_backend.repository;
 
-import com.ifoto.ifoto_backend.model.MemberType;
 import com.ifoto.ifoto_backend.model.RentalPricing;
-import com.ifoto.ifoto_backend.model.RentalPricingCategory;
+import com.ifoto.ifoto_backend.model.enumerator.MemberType;
+import com.ifoto.ifoto_backend.model.enumerator.RentalPricingCategory;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

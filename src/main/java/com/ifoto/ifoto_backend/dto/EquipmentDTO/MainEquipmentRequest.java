@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.dto.EquipmentDTO;
 
+import com.ifoto.ifoto_backend.model.enumerator.EquipmentCondition;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -20,15 +21,11 @@ public record MainEquipmentRequest(
         @Size(max = 100)
         String serialNumber,
 
-        @Size(max = 50)
-        String condition,
+        EquipmentCondition condition,
 
-        @Size(max = 50)
-        String status,
-
-        String notes,
+        String problems,
 
         Long pricingCategoryId,
 
-        boolean isForRent
+        Boolean isForRent
 ) {}

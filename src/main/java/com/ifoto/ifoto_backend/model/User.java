@@ -47,6 +47,15 @@ public class User {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @Column(name = "account_no", length = 50)
+    private String accountNo;
+
+    @Column(name = "signature", columnDefinition = "MEDIUMTEXT")
+    private String signature;
+
     @Column(name = "profile_picture", columnDefinition = "MEDIUMTEXT")
     private String profilePictureUrl;
 

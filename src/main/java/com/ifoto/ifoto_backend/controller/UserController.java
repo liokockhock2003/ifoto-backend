@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.controller;
 
+import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailRequest;
+import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserRolesResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateRequest;
@@ -10,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -43,6 +46,17 @@ public class UserController {
     @DeleteMapping("/{username}")
     public ResponseEntity<UserUpdateResponse> deleteUser(@PathVariable String username) {
         return ResponseEntity.ok(userService.deleteUserByUsername(username));
+    }
+
+    @GetMapping("/me/bank-details")
+    public ResponseEntity<BankDetailResponse> getMyBankDetail(Authentication authentication) {
+        return ResponseEntity.ok(userService.getMyBankDetail(authentication.getName()));
+    }
+
+    @PutMapping("/me/bank-details")
+    public ResponseEntity<BankDetailResponse> upsertMyBankDetail(Authentication authentication,
+            @Valid @RequestBody BankDetailRequest req) {
+        return ResponseEntity.ok(userService.upsertMyBankDetail(authentication.getName(), req));
     }
 
     private UserRolesResponse toRolesResponse(User user) {

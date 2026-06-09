@@ -1,7 +1,11 @@
 package com.ifoto.ifoto_backend.model;
 
+import com.ifoto.ifoto_backend.model.enumerator.EquipmentCondition;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "main_equipment")
@@ -29,14 +33,12 @@ public class MainEquipment {
     @Column(name = "serial_number", length = 100, unique = true)
     private String serialNumber;
 
-    @Column(name = "\"condition\"", length = 50)
-    private String condition;
-
-    @Column(length = 50)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "\"condition\"", length = 10)
+    private EquipmentCondition condition;
 
     @Column(columnDefinition = "TEXT")
-    private String notes;
+    private String problems;
 
     @Column(name = "lens_type", length = 50)
     private String lensType;
@@ -47,4 +49,8 @@ public class MainEquipment {
 
     @Column(name = "is_for_rent", nullable = false)
     private boolean isForRent;
+
+    @OneToMany(mappedBy = "mainEquipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<MainEquipmentStatus> dateStatuses = new ArrayList<>();
 }
