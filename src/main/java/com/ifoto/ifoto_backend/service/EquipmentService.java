@@ -125,8 +125,8 @@ public class EquipmentService {
                                 : mainEquipmentStatusRepository
                                                 .findStatusTypesForRange(mainIds, effectiveStart, effectiveEnd)
                                                 .stream().collect(Collectors.toMap(
-                                                                row -> (Long) row[0],
-                                                                row -> (MainEquipmentStatusType) row[1],
+                                                                StatusTypeRow::equipmentId,
+                                                                StatusTypeRow::statusType,
                                                                 (a, b) -> a));
 
                 List<Long> partialCandidateIds = allMain.stream()
@@ -711,13 +711,13 @@ public class EquipmentService {
                         return new SubQuantityMaps(Map.of(), Map.of(), Map.of());
                 Map<Long, Integer> rental = equipmentRentalSubItemRepository
                                 .sumCommittedQuantityPerSubEquipment(start, end, RENTAL_BLOCKING, excludeRentalId)
-                                .stream().collect(Collectors.toMap(r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+                                .stream().collect(Collectors.toMap(SubQuantityRow::subEquipmentId, r -> r.quantity().intValue()));
                 Map<Long, Integer> event = eventEquipmentRequestSubItemRepository
                                 .sumCommittedQuantityPerSubEquipment(start, end, EVENT_BLOCKING)
-                                .stream().collect(Collectors.toMap(r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+                                .stream().collect(Collectors.toMap(SubQuantityRow::subEquipmentId, r -> r.quantity().intValue()));
                 Map<Long, Integer> hold = subEquipmentQuantityHoldRepository
                                 .sumHeldQuantityPerSubEquipment(start, end)
-                                .stream().collect(Collectors.toMap(r -> (Long) r[0], r -> ((Number) r[1]).intValue()));
+                                .stream().collect(Collectors.toMap(SubQuantityRow::subEquipmentId, r -> r.quantity().intValue()));
                 return new SubQuantityMaps(rental, event, hold);
         }
 
@@ -730,70 +730,40 @@ public class EquipmentService {
                 LocalDateTime endBoundary = endDate.atStartOfDay();
                 equipmentRentalSubItemRepository
                                 .findBoundaryReturnQuantities(subIds, startBoundary, RENTAL_BLOCKING, excludeRentalId)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long rentalId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).plusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(rentalId, null, time, null,
-                                                                        qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(row.id(), null,
+                                                                row.datetime().plusMinutes(bufferMinutes), null,
+                                                                row.quantity().intValue())));
                 equipmentRentalSubItemRepository
                                 .findBoundaryPickupQuantities(subIds, endBoundary, RENTAL_BLOCKING, excludeRentalId)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long rentalId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).minusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(rentalId, null, null, time,
-                                                                        qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(row.id(), null, null,
+                                                                row.datetime().minusMinutes(bufferMinutes),
+                                                                row.quantity().intValue())));
                 subEquipmentQuantityHoldRepository
                                 .findBoundaryEndQuantities(subIds, startBoundary)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long holdId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).plusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(null, holdId, time, null,
-                                                                        qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(null, row.id(),
+                                                                row.datetime().plusMinutes(bufferMinutes), null,
+                                                                row.quantity().intValue())));
                 subEquipmentQuantityHoldRepository
                                 .findBoundaryStartQuantities(subIds, endBoundary)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long holdId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).minusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(null, holdId, null, time,
-                                                                        qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(null, row.id(), null,
+                                                                row.datetime().minusMinutes(bufferMinutes),
+                                                                row.quantity().intValue())));
                 eventEquipmentRequestSubItemRepository
                                 .findBoundaryReturnQuantities(subIds, startBoundary, EVENT_BLOCKING)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long eventRequestId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).plusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(eventRequestId, null, time,
-                                                                        null, qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(row.id(), null,
+                                                                row.datetime().plusMinutes(bufferMinutes), null,
+                                                                row.quantity().intValue())));
                 eventEquipmentRequestSubItemRepository
                                 .findBoundaryPickupQuantities(subIds, endBoundary, EVENT_BLOCKING)
-                                .forEach(row -> {
-                                        Long sid = (Long) row[0];
-                                        Long eventRequestId = (Long) row[1];
-                                        LocalDateTime time = ((LocalDateTime) row[2]).minusMinutes(bufferMinutes);
-                                        int qty = ((Number) row[3]).intValue();
-                                        map.computeIfAbsent(sid, k -> new ArrayList<>())
-                                                        .add(new SubEquipmentBoundaryNote(eventRequestId, null, null,
-                                                                        time, qty));
-                                });
+                                .forEach(row -> map.computeIfAbsent(row.subEquipmentId(), k -> new ArrayList<>())
+                                                .add(new SubEquipmentBoundaryNote(row.id(), null, null,
+                                                                row.datetime().minusMinutes(bufferMinutes),
+                                                                row.quantity().intValue())));
                 return map;
         }
 
@@ -803,40 +773,37 @@ public class EquipmentService {
                 Map<Long, MainEquipmentStatusType> statusMap = new HashMap<>();
                 Map<Long, List<EquipmentBoundaryNote>> boundaryMap = new HashMap<>();
 
-                List<Object[]> rentalConflicts = equipmentRentalItemRepository
+                List<RentalConflictRow> rentalConflicts = equipmentRentalItemRepository
                                 .findRentalConflictsForEquipment(partialCandidateIds, startDate, endDate,
                                                 RENTAL_BLOCKING, excludeRentalId);
-                List<Object[]> statusConflicts = mainEquipmentStatusRepository
+                List<StatusConflictRow> statusConflicts = mainEquipmentStatusRepository
                                 .findStatusWindowConflictsForEquipment(partialCandidateIds, effectiveStart,
                                                 effectiveEnd);
-                List<Object[]> eventConflicts = eventEquipmentRequestItemRepository
+                List<EventConflictRow> eventConflicts = eventEquipmentRequestItemRepository
                                 .findEventConflictsForEquipment(partialCandidateIds, startDate, endDate,
                                                 EVENT_BLOCKING);
 
-                Map<Long, List<Object[]>> rentalByEq = rentalConflicts.stream()
-                                .collect(Collectors.groupingBy(row -> (Long) row[0]));
-                Map<Long, List<Object[]>> statusByEq = statusConflicts.stream()
-                                .collect(Collectors.groupingBy(row -> (Long) row[0]));
-                Map<Long, List<Object[]>> eventByEq = eventConflicts.stream()
-                                .collect(Collectors.groupingBy(row -> (Long) row[0]));
+                Map<Long, List<RentalConflictRow>> rentalByEq = rentalConflicts.stream()
+                                .collect(Collectors.groupingBy(RentalConflictRow::equipmentId));
+                Map<Long, List<StatusConflictRow>> statusByEq = statusConflicts.stream()
+                                .collect(Collectors.groupingBy(StatusConflictRow::equipmentId));
+                Map<Long, List<EventConflictRow>> eventByEq = eventConflicts.stream()
+                                .collect(Collectors.groupingBy(EventConflictRow::equipmentId));
 
                 for (Long equipmentId : partialCandidateIds) {
-                        List<Object[]> rConflicts = rentalByEq.getOrDefault(equipmentId, List.of());
-                        List<Object[]> sConflicts = statusByEq.getOrDefault(equipmentId, List.of());
-                        List<Object[]> eConflicts = eventByEq.getOrDefault(equipmentId, List.of());
+                        List<RentalConflictRow> rConflicts = rentalByEq.getOrDefault(equipmentId, List.of());
+                        List<StatusConflictRow> sConflicts = statusByEq.getOrDefault(equipmentId, List.of());
+                        List<EventConflictRow> eConflicts = eventByEq.getOrDefault(equipmentId, List.of());
 
                         boolean hasInteriorConflict = false;
                         List<EquipmentBoundaryNote> notes = new ArrayList<>();
 
-                        for (Object[] row : rConflicts) {
-                                Long rentalId = (Long) row[1];
-                                LocalDateTime returnDt = (LocalDateTime) row[2];
-                                LocalDateTime pickupDt = (LocalDateTime) row[3];
-                                LocalDate progStart = (LocalDate) row[4];
-                                LocalDate progEnd = (LocalDate) row[5];
+                        for (RentalConflictRow row : rConflicts) {
+                                LocalDateTime returnDt = row.returnDatetime();
+                                LocalDateTime pickupDt = row.pickupDatetime();
 
-                                LocalDate effEnd = returnDt != null ? returnDt.toLocalDate() : progEnd;
-                                LocalDate effStart = pickupDt != null ? pickupDt.toLocalDate() : progStart;
+                                LocalDate effEnd = returnDt != null ? returnDt.toLocalDate() : row.programEndDate();
+                                LocalDate effStart = pickupDt != null ? pickupDt.toLocalDate() : row.programStartDate();
 
                                 boolean isStartBoundary = effEnd.equals(startDate);
                                 boolean isEndBoundary = effStart.equals(endDate);
@@ -846,18 +813,17 @@ public class EquipmentService {
                                         break;
                                 }
                                 if (isStartBoundary && returnDt != null)
-                                        notes.add(new EquipmentBoundaryNote(rentalId, null, null,
+                                        notes.add(new EquipmentBoundaryNote(row.rentalId(), null, null,
                                                         returnDt.plusMinutes(bufferMinutes), null));
                                 if (isEndBoundary && pickupDt != null)
-                                        notes.add(new EquipmentBoundaryNote(rentalId, null, null, null,
+                                        notes.add(new EquipmentBoundaryNote(row.rentalId(), null, null, null,
                                                         pickupDt.minusMinutes(bufferMinutes)));
                         }
 
                         if (!hasInteriorConflict) {
-                                for (Object[] row : sConflicts) {
-                                        Long statusId = (Long) row[1];
-                                        LocalDateTime sStart = (LocalDateTime) row[2];
-                                        LocalDateTime sEnd = (LocalDateTime) row[3];
+                                for (StatusConflictRow row : sConflicts) {
+                                        LocalDateTime sStart = row.startDatetime();
+                                        LocalDateTime sEnd = row.endDatetime();
 
                                         boolean isStartBoundary = sEnd.toLocalDate().equals(startDate);
                                         boolean isEndBoundary = sStart.toLocalDate().equals(endDate);
@@ -867,35 +833,31 @@ public class EquipmentService {
                                                 break;
                                         }
                                         if (isStartBoundary)
-                                                notes.add(new EquipmentBoundaryNote(null, statusId, null,
+                                                notes.add(new EquipmentBoundaryNote(null, row.statusId(), null,
                                                                 sEnd.plusMinutes(bufferMinutes), null));
                                         if (isEndBoundary)
-                                                notes.add(new EquipmentBoundaryNote(null, statusId, null, null,
+                                                notes.add(new EquipmentBoundaryNote(null, row.statusId(), null, null,
                                                                 sStart.minusMinutes(bufferMinutes)));
                                 }
                         }
 
                         if (!hasInteriorConflict) {
-                                for (Object[] row : eConflicts) {
-                                        Long eventRequestId = (Long) row[1];
-                                        LocalDateTime effEndDt = (LocalDateTime) row[2];
-                                        LocalDateTime effStartDt = (LocalDateTime) row[3];
+                                for (EventConflictRow row : eConflicts) {
+                                        LocalDateTime effEndDt = row.effectiveEndDatetime();
+                                        LocalDateTime effStartDt = row.effectiveStartDatetime();
 
-                                        LocalDate effEnd = effEndDt.toLocalDate();
-                                        LocalDate effStart = effStartDt.toLocalDate();
-
-                                        boolean isStartBoundary = effEnd.equals(startDate);
-                                        boolean isEndBoundary = effStart.equals(endDate);
+                                        boolean isStartBoundary = effEndDt.toLocalDate().equals(startDate);
+                                        boolean isEndBoundary = effStartDt.toLocalDate().equals(endDate);
 
                                         if (!isStartBoundary && !isEndBoundary) {
                                                 hasInteriorConflict = true;
                                                 break;
                                         }
                                         if (isStartBoundary)
-                                                notes.add(new EquipmentBoundaryNote(null, null, eventRequestId,
+                                                notes.add(new EquipmentBoundaryNote(null, null, row.eventRequestId(),
                                                                 effEndDt.plusMinutes(bufferMinutes), null));
                                         if (isEndBoundary)
-                                                notes.add(new EquipmentBoundaryNote(null, null, eventRequestId, null,
+                                                notes.add(new EquipmentBoundaryNote(null, null, row.eventRequestId(), null,
                                                                 effStartDt.minusMinutes(bufferMinutes)));
                                 }
                         }

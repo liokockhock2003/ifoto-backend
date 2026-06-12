@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.*;
 import com.ifoto.ifoto_backend.dto.EquipmentRentalDTO.SubEquipmentEntry;
 import com.ifoto.ifoto_backend.model.*;
 import com.ifoto.ifoto_backend.model.enumerator.*;
@@ -486,7 +487,7 @@ public class EquipmentRentalService {
         // ── Equipment schedules ───────────────────────────────────────────────────
 
         @Transactional(readOnly = true)
-        public com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse getEquipmentSchedules(
+        public EquipmentSchedulesResponse getEquipmentSchedules(
                         Long rentalId,
                         List<Long> mainEquipmentIds,
                         List<Long> subEquipmentIds,
@@ -510,43 +511,43 @@ public class EquipmentRentalService {
                                 : rental.getSubItems().stream()
                                                 .map(s -> s.getSubEquipment().getSubEquipmentId()).toList();
 
-                Map<Long, List<com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentStatusResponse>> statusMap =
+                Map<Long, List<MainEquipmentStatusResponse>> statusMap =
                         mainIds.isEmpty() ? Map.of()
                                 : mainEquipmentStatusRepository.findAllByEquipmentIds(mainIds)
                                                 .stream()
                                                 .collect(Collectors.groupingBy(
                                                                 s -> s.getMainEquipment().getMainEquipmentId(),
                                                                 Collectors.mapping(
-                                                                                s -> new com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentStatusResponse(
+                                                                                s -> new MainEquipmentStatusResponse(
                                                                                                 s.getId(), s.getStatusType(),
                                                                                                 s.getStartDatetime(), s.getEndDatetime(), s.getNotes()),
                                                                                 Collectors.toList())));
 
-                Map<Long, List<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse>> holdMap =
+                Map<Long, List<SubEquipmentQuantityHoldResponse>> holdMap =
                         subIds.isEmpty() ? Map.of()
                                 : subEquipmentQuantityHoldRepository.findAllBySubEquipmentIds(subIds)
                                                 .stream()
                                                 .collect(Collectors.groupingBy(
                                                                 h -> h.getSubEquipment().getSubEquipmentId(),
                                                                 Collectors.mapping(
-                                                                                h -> new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse(
+                                                                                h -> new SubEquipmentQuantityHoldResponse(
                                                                                                 h.getId(), h.getQuantity(),
                                                                                                 h.getStartDatetime(), h.getEndDatetime(), h.getNotes()),
                                                                                 Collectors.toList())));
 
-                List<com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentScheduleEntry> mainEntries =
+                List<MainEquipmentScheduleEntry> mainEntries =
                         mainIds.stream()
                                 .map(id -> {
                                         MainEquipment eq = mainEquipmentRepository.findById(id)
                                                         .orElseThrow(() -> new ResponseStatusException(
                                                                         HttpStatus.NOT_FOUND, "Equipment not found: " + id));
-                                        return new com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentScheduleEntry(
+                                        return new MainEquipmentScheduleEntry(
                                                         eq.getMainEquipmentId(), eq.getBrand(), eq.getModel(),
                                                         eq.getSerialNumber(),
                                                         statusMap.getOrDefault(id, List.of()));
                                 }).toList();
 
-                List<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentScheduleEntry> subEntries =
+                List<SubEquipmentScheduleEntry> subEntries =
                         subIds.stream()
                                 .map(id -> {
                                         SubEquipment sub = subEquipmentRepository.findById(id)
@@ -555,13 +556,13 @@ public class EquipmentRentalService {
                                         int qty = rental.getSubItems().stream()
                                                         .filter(s -> s.getSubEquipment().getSubEquipmentId().equals(id))
                                                         .mapToInt(EquipmentRentalSubItem::getBorrowedQuantity).sum();
-                                        return new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentScheduleEntry(
+                                        return new SubEquipmentScheduleEntry(
                                                         sub.getSubEquipmentId(), sub.getType(), sub.getBrand(),
                                                         sub.getCameraModel(), qty,
-                                                        holdMap.getOrDefault(id, List.<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse>of()));
+                                                        holdMap.getOrDefault(id, List.of()));
                                 }).toList();
 
-                return new com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse(mainEntries, subEntries);
+                return new EquipmentSchedulesResponse(mainEntries, subEntries);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────────
@@ -808,16 +809,16 @@ public class EquipmentRentalService {
                                                 .findBoundaryReturnQuantities(List.of(sub.getSubEquipmentId()),
                                                                 startDate.atStartOfDay(), BLOCKING_STATUSES, 0L)
                                                 .stream()
-                                                .filter(row -> !((LocalDateTime) row[2]).plusMinutes(bufferMinutes)
+                                                .filter(row -> !row.datetime().plusMinutes(bufferMinutes)
                                                                 .toLocalDate().isAfter(startDate))
-                                                .mapToInt(row -> ((Number) row[3]).intValue()).sum();
+                                                .mapToInt(row -> row.quantity().intValue()).sum();
                                 int feasibleEndBoundaryQty = rentalSubItemRepository
                                                 .findBoundaryPickupQuantities(List.of(sub.getSubEquipmentId()),
                                                                 endDate.atStartOfDay(), BLOCKING_STATUSES, 0L)
                                                 .stream()
-                                                .filter(row -> !((LocalDateTime) row[2]).minusMinutes(bufferMinutes)
+                                                .filter(row -> !row.datetime().minusMinutes(bufferMinutes)
                                                                 .toLocalDate().isBefore(endDate))
-                                                .mapToInt(row -> ((Number) row[3]).intValue()).sum();
+                                                .mapToInt(row -> row.quantity().intValue()).sum();
                                 int minConcurrent = Math.max(0, totalCommitted
                                                 - Math.max(feasibleStartBoundaryQty, feasibleEndBoundaryQty));
                                 if (minConcurrent + held + entry.quantity() > sub.getTotalQuantity()) {

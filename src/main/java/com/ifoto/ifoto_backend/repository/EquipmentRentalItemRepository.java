@@ -1,6 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.BookedDateRange;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.RentalConflictRow;
 import com.ifoto.ifoto_backend.dto.ReportDTO.EquipmentUtilizationProjection;
 import com.ifoto.ifoto_backend.model.EquipmentRentalItem;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
@@ -78,10 +79,10 @@ public interface EquipmentRentalItemRepository extends JpaRepository<EquipmentRe
                         @Param("statuses") Collection<RentalStatus> statuses);
 
         @Query("""
-                        SELECT eri.mainEquipment.mainEquipmentId,
-                               er.id,
+                        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.RentalConflictRow(
+                               eri.mainEquipment.mainEquipmentId, er.id,
                                er.returnDatetime, er.pickupDatetime,
-                               er.programStartDate, er.programEndDate
+                               er.programStartDate, er.programEndDate)
                         FROM EquipmentRentalItem eri JOIN eri.equipmentRental er
                         WHERE eri.mainEquipment.mainEquipmentId IN :ids
                         AND er.status IN :statuses
@@ -89,7 +90,7 @@ public interface EquipmentRentalItemRepository extends JpaRepository<EquipmentRe
                         AND :startDate <= COALESCE(cast(er.returnDatetime as date), er.programEndDate)
                         AND :endDate   >= COALESCE(cast(er.pickupDatetime as date), er.programStartDate)
                         """)
-        List<Object[]> findRentalConflictsForEquipment(
+        List<RentalConflictRow> findRentalConflictsForEquipment(
                         @Param("ids") List<Long> ids,
                         @Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate,

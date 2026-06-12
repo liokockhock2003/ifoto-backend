@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.repository;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.EventConflictRow;
 import com.ifoto.ifoto_backend.model.EventEquipmentRequestItem;
 import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,9 +43,10 @@ public interface EventEquipmentRequestItemRepository extends JpaRepository<Event
             @Param("statuses") List<EventEquipmentRequestStatus> statuses);
 
     @Query("""
-            SELECT i.mainEquipment.mainEquipmentId, r.id,
+            SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.EventConflictRow(
+                   i.mainEquipment.mainEquipmentId, r.id,
                    COALESCE(r.returnDatetime, r.endDatetime),
-                   COALESCE(r.pickupDatetime, r.startDatetime)
+                   COALESCE(r.pickupDatetime, r.startDatetime))
             FROM EventEquipmentRequestItem i
             JOIN i.eventEquipmentRequest r
             WHERE i.mainEquipment.mainEquipmentId IN :equipmentIds
@@ -52,7 +54,7 @@ public interface EventEquipmentRequestItemRepository extends JpaRepository<Event
               AND :startDate <= cast(COALESCE(r.returnDatetime, r.endDatetime) as date)
               AND :endDate   >= cast(COALESCE(r.pickupDatetime, r.startDatetime) as date)
             """)
-    List<Object[]> findEventConflictsForEquipment(
+    List<EventConflictRow> findEventConflictsForEquipment(
             @Param("equipmentIds") List<Long> equipmentIds,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,

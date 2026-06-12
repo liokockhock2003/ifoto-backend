@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.StatusConflictRow;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.StatusTypeRow;
 import com.ifoto.ifoto_backend.model.MainEquipmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -60,23 +62,25 @@ public interface MainEquipmentStatusRepository extends JpaRepository<MainEquipme
             @Param("endDatetime") LocalDateTime endDatetime);
 
     @Query("""
-        SELECT s.mainEquipment.mainEquipmentId, s.statusType
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.StatusTypeRow(
+            s.mainEquipment.mainEquipmentId, s.statusType)
         FROM MainEquipmentStatus s
         WHERE s.mainEquipment.mainEquipmentId IN :ids
         AND :startDatetime < s.endDatetime AND :endDatetime > s.startDatetime
     """)
-    List<Object[]> findStatusTypesForRange(
+    List<StatusTypeRow> findStatusTypesForRange(
             @Param("ids") List<Long> ids,
             @Param("startDatetime") LocalDateTime startDatetime,
             @Param("endDatetime") LocalDateTime endDatetime);
 
     @Query("""
-        SELECT s.mainEquipment.mainEquipmentId, s.id, s.startDatetime, s.endDatetime
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.StatusConflictRow(
+            s.mainEquipment.mainEquipmentId, s.id, s.startDatetime, s.endDatetime)
         FROM MainEquipmentStatus s
         WHERE s.mainEquipment.mainEquipmentId IN :ids
         AND :startDatetime < s.endDatetime AND :endDatetime > s.startDatetime
     """)
-    List<Object[]> findStatusWindowConflictsForEquipment(
+    List<StatusConflictRow> findStatusWindowConflictsForEquipment(
             @Param("ids") List<Long> ids,
             @Param("startDatetime") LocalDateTime startDatetime,
             @Param("endDatetime") LocalDateTime endDatetime);
