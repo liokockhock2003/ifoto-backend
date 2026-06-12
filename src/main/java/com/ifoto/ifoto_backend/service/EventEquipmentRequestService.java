@@ -1,5 +1,6 @@
 package com.ifoto.ifoto_backend.service;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.*;
 import com.ifoto.ifoto_backend.dto.EventEquipmentRequestDTO.EquipmentRequestSubItemRequest;
 import com.ifoto.ifoto_backend.model.*;
 import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
@@ -19,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -333,7 +336,7 @@ public class EventEquipmentRequestService {
     // ── Equipment schedules ───────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse getEquipmentSchedules(
+    public EquipmentSchedulesResponse getEquipmentSchedules(
             Long requestId,
             List<Long> mainEquipmentIds,
             List<Long> subEquipmentIds,
@@ -359,43 +362,43 @@ public class EventEquipmentRequestService {
                 : request.getSubItems().stream()
                         .map(s -> s.getSubEquipment().getSubEquipmentId()).toList();
 
-        java.util.Map<Long, List<com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentStatusResponse>> statusMap =
-                mainIds.isEmpty() ? java.util.Map.of()
+        Map<Long, List<MainEquipmentStatusResponse>> statusMap =
+                mainIds.isEmpty() ? Map.of()
                         : mainEquipmentStatusRepository.findAllByEquipmentIds(mainIds)
                                 .stream()
-                                .collect(java.util.stream.Collectors.groupingBy(
+                                .collect(Collectors.groupingBy(
                                         s -> s.getMainEquipment().getMainEquipmentId(),
-                                        java.util.stream.Collectors.mapping(
-                                                s -> new com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentStatusResponse(
+                                        Collectors.mapping(
+                                                s -> new MainEquipmentStatusResponse(
                                                         s.getId(), s.getStatusType(),
                                                         s.getStartDatetime(), s.getEndDatetime(), s.getNotes()),
-                                                java.util.stream.Collectors.toList())));
+                                                Collectors.toList())));
 
-        java.util.Map<Long, List<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse>> holdMap =
-                subIds.isEmpty() ? java.util.Map.of()
+        Map<Long, List<SubEquipmentQuantityHoldResponse>> holdMap =
+                subIds.isEmpty() ? Map.of()
                         : subEquipmentQuantityHoldRepository.findAllBySubEquipmentIds(subIds)
                                 .stream()
-                                .collect(java.util.stream.Collectors.groupingBy(
+                                .collect(Collectors.groupingBy(
                                         h -> h.getSubEquipment().getSubEquipmentId(),
-                                        java.util.stream.Collectors.mapping(
-                                                h -> new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse(
+                                        Collectors.mapping(
+                                                h -> new SubEquipmentQuantityHoldResponse(
                                                         h.getId(), h.getQuantity(),
                                                         h.getStartDatetime(), h.getEndDatetime(), h.getNotes()),
-                                                java.util.stream.Collectors.toList())));
+                                                Collectors.toList())));
 
-        List<com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentScheduleEntry> mainEntries =
+        List<MainEquipmentScheduleEntry> mainEntries =
                 mainIds.stream()
                         .map(id -> {
                             MainEquipment eq = mainEquipmentRepository.findById(id)
                                     .orElseThrow(() -> new ResponseStatusException(
                                             HttpStatus.NOT_FOUND, "Equipment not found: " + id));
-                            return new com.ifoto.ifoto_backend.dto.EquipmentDTO.MainEquipmentScheduleEntry(
+                            return new MainEquipmentScheduleEntry(
                                     eq.getMainEquipmentId(), eq.getBrand(), eq.getModel(),
                                     eq.getSerialNumber(),
                                     statusMap.getOrDefault(id, List.of()));
                         }).toList();
 
-        List<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentScheduleEntry> subEntries =
+        List<SubEquipmentScheduleEntry> subEntries =
                 subIds.stream()
                         .map(id -> {
                             SubEquipment sub = subEquipmentRepository.findById(id)
@@ -404,13 +407,13 @@ public class EventEquipmentRequestService {
                             int qty = request.getSubItems().stream()
                                     .filter(s -> s.getSubEquipment().getSubEquipmentId().equals(id))
                                     .mapToInt(EventEquipmentRequestSubItem::getBorrowedQuantity).sum();
-                            return new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentScheduleEntry(
+                            return new SubEquipmentScheduleEntry(
                                     sub.getSubEquipmentId(), sub.getType(), sub.getBrand(),
                                     sub.getCameraModel(), qty,
-                                    holdMap.getOrDefault(id, List.<com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentQuantityHoldResponse>of()));
+                                    holdMap.getOrDefault(id, List.of()));
                         }).toList();
 
-        return new com.ifoto.ifoto_backend.dto.EquipmentDTO.EquipmentSchedulesResponse(mainEntries, subEntries);
+        return new EquipmentSchedulesResponse(mainEntries, subEntries);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
