@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow;
 import com.ifoto.ifoto_backend.model.SubEquipmentQuantityHold;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -33,34 +35,37 @@ public interface SubEquipmentQuantityHoldRepository extends JpaRepository<SubEqu
             @Param("excludeHoldId") Long excludeHoldId);
 
     @Query("""
-        SELECT h.subEquipment.subEquipmentId, COALESCE(SUM(h.quantity), 0)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow(
+            h.subEquipment.subEquipmentId, COALESCE(SUM(h.quantity), 0))
         FROM SubEquipmentQuantityHold h
         WHERE :startDatetime < h.endDatetime AND :endDatetime > h.startDatetime
         GROUP BY h.subEquipment.subEquipmentId
     """)
-    List<Object[]> sumHeldQuantityPerSubEquipment(
+    List<SubQuantityRow> sumHeldQuantityPerSubEquipment(
             @Param("startDatetime") LocalDateTime startDatetime,
             @Param("endDatetime") LocalDateTime endDatetime);
 
     @Query("""
-        SELECT h.subEquipment.subEquipmentId, h.id, h.endDatetime, SUM(h.quantity)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+            h.subEquipment.subEquipmentId, h.id, h.endDatetime, SUM(h.quantity))
         FROM SubEquipmentQuantityHold h
         WHERE h.subEquipment.subEquipmentId IN :ids
         AND cast(h.endDatetime as date) = cast(:boundaryDate as date)
         GROUP BY h.subEquipment.subEquipmentId, h.id, h.endDatetime
     """)
-    List<Object[]> findBoundaryEndQuantities(
+    List<SubBoundaryRow> findBoundaryEndQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate);
 
     @Query("""
-        SELECT h.subEquipment.subEquipmentId, h.id, h.startDatetime, SUM(h.quantity)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+            h.subEquipment.subEquipmentId, h.id, h.startDatetime, SUM(h.quantity))
         FROM SubEquipmentQuantityHold h
         WHERE h.subEquipment.subEquipmentId IN :ids
         AND cast(h.startDatetime as date) = cast(:boundaryDate as date)
         GROUP BY h.subEquipment.subEquipmentId, h.id, h.startDatetime
     """)
-    List<Object[]> findBoundaryStartQuantities(
+    List<SubBoundaryRow> findBoundaryStartQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate);
 }

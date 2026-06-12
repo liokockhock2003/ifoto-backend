@@ -1,6 +1,8 @@
 package com.ifoto.ifoto_backend.repository;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow;
 import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubEquipmentBookedRange;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow;
 import com.ifoto.ifoto_backend.model.EquipmentRentalSubItem;
 import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -65,7 +67,8 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
     );
 
     @Query("""
-            SELECT ersi.subEquipment.subEquipmentId, COALESCE(SUM(ersi.borrowedQuantity), 0)
+            SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow(
+                   ersi.subEquipment.subEquipmentId, COALESCE(SUM(ersi.borrowedQuantity), 0))
             FROM EquipmentRentalSubItem ersi JOIN ersi.equipmentRental er
             WHERE er.status IN :statuses
             AND er.id <> :excludeRentalId
@@ -73,7 +76,7 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
             AND :endDatetime   > COALESCE(er.pickupDatetime, cast(er.programStartDate as timestamp))
             GROUP BY ersi.subEquipment.subEquipmentId
             """)
-    List<Object[]> sumCommittedQuantityPerSubEquipment(
+    List<SubQuantityRow> sumCommittedQuantityPerSubEquipment(
             @Param("startDatetime") LocalDateTime startDatetime,
             @Param("endDatetime") LocalDateTime endDatetime,
             @Param("statuses") Collection<RentalStatus> statuses,
@@ -81,7 +84,8 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
     );
 
     @Query("""
-            SELECT ersi.subEquipment.subEquipmentId, er.id, er.returnDatetime, SUM(ersi.borrowedQuantity)
+            SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+                   ersi.subEquipment.subEquipmentId, er.id, er.returnDatetime, SUM(ersi.borrowedQuantity))
             FROM EquipmentRentalSubItem ersi JOIN ersi.equipmentRental er
             WHERE ersi.subEquipment.subEquipmentId IN :ids
             AND er.status IN :statuses
@@ -89,7 +93,7 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
             AND cast(er.returnDatetime as date) = cast(:boundaryDate as date)
             GROUP BY ersi.subEquipment.subEquipmentId, er.id, er.returnDatetime
             """)
-    List<Object[]> findBoundaryReturnQuantities(
+    List<SubBoundaryRow> findBoundaryReturnQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate,
             @Param("statuses") Collection<RentalStatus> statuses,
@@ -97,7 +101,8 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
     );
 
     @Query("""
-            SELECT ersi.subEquipment.subEquipmentId, er.id, er.pickupDatetime, SUM(ersi.borrowedQuantity)
+            SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+                   ersi.subEquipment.subEquipmentId, er.id, er.pickupDatetime, SUM(ersi.borrowedQuantity))
             FROM EquipmentRentalSubItem ersi JOIN ersi.equipmentRental er
             WHERE ersi.subEquipment.subEquipmentId IN :ids
             AND er.status IN :statuses
@@ -105,7 +110,7 @@ public interface EquipmentRentalSubItemRepository extends JpaRepository<Equipmen
             AND cast(er.pickupDatetime as date) = cast(:boundaryDate as date)
             GROUP BY ersi.subEquipment.subEquipmentId, er.id, er.pickupDatetime
             """)
-    List<Object[]> findBoundaryPickupQuantities(
+    List<SubBoundaryRow> findBoundaryPickupQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate,
             @Param("statuses") Collection<RentalStatus> statuses,

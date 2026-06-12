@@ -1,5 +1,7 @@
 package com.ifoto.ifoto_backend.repository;
 
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow;
+import com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow;
 import com.ifoto.ifoto_backend.model.EventEquipmentRequestSubItem;
 import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,44 +32,47 @@ public interface EventEquipmentRequestSubItemRepository extends JpaRepository<Ev
     );
 
     @Query("""
-        SELECT si.subEquipment.subEquipmentId, COALESCE(SUM(si.borrowedQuantity), 0)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubQuantityRow(
+               si.subEquipment.subEquipmentId, COALESCE(SUM(si.borrowedQuantity), 0))
         FROM EventEquipmentRequestSubItem si JOIN si.eventEquipmentRequest er
         WHERE er.status IN :statuses
           AND :startDatetime < COALESCE(er.returnDatetime, er.endDatetime)
           AND :endDatetime   > COALESCE(er.pickupDatetime, er.startDatetime)
         GROUP BY si.subEquipment.subEquipmentId
     """)
-    List<Object[]> sumCommittedQuantityPerSubEquipment(
+    List<SubQuantityRow> sumCommittedQuantityPerSubEquipment(
             @Param("startDatetime") LocalDateTime startDatetime,
             @Param("endDatetime") LocalDateTime endDatetime,
             @Param("statuses") Collection<EventEquipmentRequestStatus> statuses
     );
 
     @Query("""
-        SELECT si.subEquipment.subEquipmentId, er.id,
-               COALESCE(er.returnDatetime, er.endDatetime), SUM(si.borrowedQuantity)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+               si.subEquipment.subEquipmentId, er.id,
+               COALESCE(er.returnDatetime, er.endDatetime), SUM(si.borrowedQuantity))
         FROM EventEquipmentRequestSubItem si JOIN si.eventEquipmentRequest er
         WHERE si.subEquipment.subEquipmentId IN :ids
           AND er.status IN :statuses
           AND cast(COALESCE(er.returnDatetime, er.endDatetime) as date) = cast(:boundaryDate as date)
         GROUP BY si.subEquipment.subEquipmentId, er.id, COALESCE(er.returnDatetime, er.endDatetime)
     """)
-    List<Object[]> findBoundaryReturnQuantities(
+    List<SubBoundaryRow> findBoundaryReturnQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate,
             @Param("statuses") Collection<EventEquipmentRequestStatus> statuses
     );
 
     @Query("""
-        SELECT si.subEquipment.subEquipmentId, er.id,
-               COALESCE(er.pickupDatetime, er.startDatetime), SUM(si.borrowedQuantity)
+        SELECT new com.ifoto.ifoto_backend.dto.EquipmentDTO.SubBoundaryRow(
+               si.subEquipment.subEquipmentId, er.id,
+               COALESCE(er.pickupDatetime, er.startDatetime), SUM(si.borrowedQuantity))
         FROM EventEquipmentRequestSubItem si JOIN si.eventEquipmentRequest er
         WHERE si.subEquipment.subEquipmentId IN :ids
           AND er.status IN :statuses
           AND cast(COALESCE(er.pickupDatetime, er.startDatetime) as date) = cast(:boundaryDate as date)
         GROUP BY si.subEquipment.subEquipmentId, er.id, COALESCE(er.pickupDatetime, er.startDatetime)
     """)
-    List<Object[]> findBoundaryPickupQuantities(
+    List<SubBoundaryRow> findBoundaryPickupQuantities(
             @Param("ids") List<Long> ids,
             @Param("boundaryDate") LocalDateTime boundaryDate,
             @Param("statuses") Collection<EventEquipmentRequestStatus> statuses
