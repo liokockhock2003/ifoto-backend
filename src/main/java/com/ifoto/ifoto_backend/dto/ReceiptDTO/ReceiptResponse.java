@@ -12,7 +12,7 @@ public record ReceiptResponse(
         PaymentInfo payment,
         CommitteeInfo committee
 ) {
-    public record RenterInfo(String username, String fullName, String email, String phoneNumber) {}
+    public record RenterInfo(String username, String fullName, String email, String phoneNumber, String position) {}
 
     public record CommitteeInfo(String approvedBy, String signature) {}
 

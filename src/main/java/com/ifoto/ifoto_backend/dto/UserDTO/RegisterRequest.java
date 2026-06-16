@@ -14,6 +14,7 @@ public record RegisterRequest(
 	@NotBlank @Size(min = 8) String password,
 	@Size(max = 100) String fullName,
 	@Size(max = 20) String phoneNumber,
+	@Size(max = 100) String position,
 	String profilePicture
 ) {
 }

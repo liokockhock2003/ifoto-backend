@@ -2,6 +2,8 @@ package com.ifoto.ifoto_backend.service;
 
 import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ProfileResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ProfileUpdateRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateResponse;
 import com.ifoto.ifoto_backend.model.Role;
@@ -34,6 +36,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationTokenService emailVerificationTokenService;
 
     @Transactional
     public User register(@Valid User user) {
@@ -228,6 +231,43 @@ public class UserService {
     private BankDetailResponse toBankDetailResponse(User user) {
         return new BankDetailResponse(user.getBankName(), user.getAccountNo(),
                 user.getFullName(), user.getUsername(), user.getSignature());
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileResponse getMyProfile(String username) {
+        return toProfileResponse(getByUsername(username));
+    }
+
+    @Transactional
+    public ProfileResponse updateMyProfile(String username, ProfileUpdateRequest req) {
+        User user = getByUsername(username);
+        String newEmail = req.email().trim();
+        boolean emailChanged = !newEmail.equalsIgnoreCase(user.getEmail());
+
+        if (emailChanged) {
+            userRepository.findByEmail(newEmail)
+                    .filter(other -> !other.getId().equals(user.getId()))
+                    .ifPresent(o -> {
+                        throw new IllegalArgumentException("Email already exists");
+                    });
+            user.setEmail(newEmail);
+            user.setEmailVerified(false);
+        }
+
+        user.setFullName(req.fullName());
+        user.setPhoneNumber(req.phoneNumber());
+        user.setPosition(req.position());
+        userRepository.save(user);
+
+        if (emailChanged) {
+            emailVerificationTokenService.sendVerificationEmail(user);
+        }
+        return toProfileResponse(user);
+    }
+
+    private ProfileResponse toProfileResponse(User user) {
+        return new ProfileResponse(user.getUsername(), user.getEmail(), user.getFullName(),
+                user.getPhoneNumber(), user.getPosition(), user.isEmailVerified());
     }
 
     @Transactional

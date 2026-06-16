@@ -19,7 +19,7 @@ INSERT INTO users (username, email, password_hash, full_name, phone_number, prof
                    is_active, is_email_verified, is_locked, failed_login_attempts, last_login_at)
 VALUES
 ('admin',               'admin@ifoto.com',               '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Admin User',          '+601234567890', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
-('johndoe',             'liohock@graduate.utm.my',       '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'John Doe',            '+601987654321', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
+('johndoe',             'john@ifoto.com',                 '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'John Doe',            '+601987654321', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
 ('janedoe',             'jane@ifoto.com',                '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Jane Doe',            '+601122334455', NULL, TRUE,  TRUE,  FALSE, 0, NULL),
 ('lockeduser',          'locked@ifoto.com',              '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Locked User',         NULL,            NULL, TRUE,  TRUE,  TRUE,  5, NULL),
 ('guestuser',           'guest@ifoto.com',               '$2a$10$ZD9aWXB7zzi0YZakRGfk7OvcQY7J1eQAC7PvqWN4sNpy7ofrY4IkC', 'Guest User',          NULL,            NULL, TRUE,  TRUE,  FALSE, 0, NULL),

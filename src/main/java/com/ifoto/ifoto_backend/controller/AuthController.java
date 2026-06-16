@@ -51,6 +51,7 @@ public class AuthController {
                 .passwordHash(req.password())
                 .fullName(req.fullName())
                 .phoneNumber(req.phoneNumber())
+                .position(req.position())
                 .profilePictureUrl(req.profilePicture())
                 .build();
 
