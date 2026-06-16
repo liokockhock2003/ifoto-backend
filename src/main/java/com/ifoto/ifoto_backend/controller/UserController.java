@@ -2,6 +2,8 @@ package com.ifoto.ifoto_backend.controller;
 
 import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.BankDetailResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ProfileResponse;
+import com.ifoto.ifoto_backend.dto.UserDTO.ProfileUpdateRequest;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserListItemResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserRolesResponse;
 import com.ifoto.ifoto_backend.dto.UserDTO.UserUpdateRequest;
@@ -46,6 +48,17 @@ public class UserController {
     @DeleteMapping("/{username}")
     public ResponseEntity<UserUpdateResponse> deleteUser(@PathVariable String username) {
         return ResponseEntity.ok(userService.deleteUserByUsername(username));
+    }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<ProfileResponse> getMyProfile(Authentication authentication) {
+        return ResponseEntity.ok(userService.getMyProfile(authentication.getName()));
+    }
+
+    @PutMapping("/me/profile")
+    public ResponseEntity<ProfileResponse> updateMyProfile(Authentication authentication,
+            @Valid @RequestBody ProfileUpdateRequest req) {
+        return ResponseEntity.ok(userService.updateMyProfile(authentication.getName(), req));
     }
 
     @GetMapping("/me/bank-details")

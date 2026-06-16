@@ -86,7 +86,7 @@ public class ReceiptController {
                 r.getReceiptNumber(),
                 r.getDocumentType().name(),
                 r.getIssuedAt(),
-                new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
+                new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber(), user.getPosition()),
                 new ReceiptResponse.RentalInfo(
                         rental.getRentalNumber(),
                         rental.getProgramStartDate(),
@@ -113,7 +113,7 @@ public class ReceiptController {
         return new ReceiptResponse(
                 r.getReceiptNumber(),
                 r.getIssuedAt(),
-                new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
+                new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber(), user.getPosition()),
                 new ReceiptResponse.RentalInfo(
                         rental.getRentalNumber(),
                         rental.getProgramStartDate(),

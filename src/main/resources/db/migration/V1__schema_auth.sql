@@ -11,6 +11,7 @@ CREATE TABLE users (
     password_hash         VARCHAR(255) NOT NULL,
     full_name             VARCHAR(100),
     phone_number          VARCHAR(20),
+    position              VARCHAR(100) NULL,
     bank_name             VARCHAR(100) NULL,
     account_no            VARCHAR(50)  NULL,
     signature             MEDIUMTEXT   NULL,

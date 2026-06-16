@@ -49,6 +49,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/me/profile").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/me/profile").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/me/bank-details").hasRole("EQUIPMENT_COMMITTEE")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/me/bank-details").hasRole("EQUIPMENT_COMMITTEE")
                         .requestMatchers("/api/v1/users/**").hasAnyRole("ADMIN", "HIGH_COMMITTEE")
