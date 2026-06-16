@@ -35,7 +35,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final List<PathLimit> PATH_LIMITS = List.of(
             // Public endpoints — keyed by client IP
             new PathLimit("POST", "/api/v1/auth/login",
-                    Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(15))
+                    Bandwidth.builder().capacity(15).refillIntervally(5, Duration.ofMinutes(15))
                             .build()),
             new PathLimit("POST", "/api/v1/auth/forgot-password",
                     Bandwidth.builder().capacity(3).refillIntervally(3, Duration.ofHours(1))

@@ -47,6 +47,10 @@ public class User {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Size(max = 100, message = "Position cannot exceed 100 characters")
+    @Column(name = "position", length = 100)
+    private String position;
+
     @Column(name = "bank_name", length = 100)
     private String bankName;
 
