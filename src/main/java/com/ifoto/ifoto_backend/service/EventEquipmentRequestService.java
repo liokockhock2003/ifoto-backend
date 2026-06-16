@@ -103,7 +103,7 @@ public class EventEquipmentRequestService {
                     .toList();
             List<String[]> subEqRows = request.getSubItems().stream()
                     .map(s -> new String[] {
-                            s.getSubEquipment().getType() + " " + s.getSubEquipment().getBrand(),
+                            subLabel(s.getSubEquipment()),
                             "x" + s.getBorrowedQuantity() })
                     .toList();
             mailService.sendEventRequestSubmittedToCommittee(committeeEmails, request.getRequestNumber(),
@@ -222,12 +222,16 @@ public class EventEquipmentRequestService {
     @Transactional
     public EventEquipmentRequest markPickedUp(Long id, String username) {
         EventEquipmentRequest request = findRequest(id);
-        if (request.getStatus() != EventEquipmentRequestStatus.APPROVED) {
+        var status = request.getStatus();
+        if (status != EventEquipmentRequestStatus.APPROVED
+                && status != EventEquipmentRequestStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Request must be APPROVED to mark as picked up");
+                    "Request must be APPROVED or ACTIVE to mark as picked up");
         }
         requireApproverOrFallback(request, findUser(username));
-        request.setStatus(EventEquipmentRequestStatus.PICKED_UP);
+        if (status == EventEquipmentRequestStatus.APPROVED) {
+            request.setStatus(EventEquipmentRequestStatus.PICKED_UP);
+        }
         request.setPickedUpAt(LocalDateTime.now());
         request = requestRepository.save(request);
         mailService.sendEventRequestPickedUpToRequester(request.getRequestedBy().getEmail(),
@@ -552,6 +556,11 @@ public class EventEquipmentRequestService {
     private List<String> committeeEmails() {
         return userRepository.findAllByRoleName("ROLE_EQUIPMENT_COMMITTEE")
                 .stream().map(User::getEmail).toList();
+    }
+
+    private static String subLabel(SubEquipment sub) {
+        String brand = sub.getBrand();
+        return (brand != null && !brand.isBlank()) ? sub.getType() + " " + brand : sub.getType();
     }
 
     private User findUser(String username) {

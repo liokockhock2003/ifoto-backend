@@ -256,6 +256,22 @@ class EventEquipmentRequestServiceTest {
     }
 
     @Test
+    void markPickedUp_statusActive_keepsActiveAndSetsPickedUpAt() {
+        // Scheduler activated the request before committee marked pickup; should still be allowed
+        EventEquipmentRequest request = requestWithStatus(EventEquipmentRequestStatus.ACTIVE);
+        request.setReviewedBy(null);
+
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventEquipmentRequest result = service.markPickedUp(1L, "comm");
+
+        assertEquals(EventEquipmentRequestStatus.ACTIVE, result.getStatus());
+        assertNotNull(result.getPickedUpAt());
+    }
+
+    @Test
     void markPickedUp_nonApproverWhenApproverStillActive_throwsForbidden() {
         User activeApprover = equipmentCommitteeUser(10L, "approver");
         User otherComm = User.builder().id(2L).username("other").build();
