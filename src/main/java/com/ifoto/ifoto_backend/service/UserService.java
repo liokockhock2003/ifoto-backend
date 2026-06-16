@@ -254,9 +254,9 @@ public class UserService {
             user.setEmailVerified(false);
         }
 
-        user.setFullName(req.fullName());
-        user.setPhoneNumber(req.phoneNumber());
-        user.setPosition(req.position());
+        user.setFullName(req.fullName() != null ? req.fullName().trim() : null);
+        user.setPhoneNumber(req.phoneNumber() != null ? req.phoneNumber().trim() : null);
+        user.setPosition(req.position() != null ? req.position().trim() : null);
         userRepository.save(user);
 
         if (emailChanged) {

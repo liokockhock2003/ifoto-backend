@@ -46,12 +46,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest req) {
         User user = User.builder()
-                .username(req.username())
-                .email(req.email())
+                .username(req.username().trim())
+                .email(req.email().trim())
                 .passwordHash(req.password())
-                .fullName(req.fullName())
-                .phoneNumber(req.phoneNumber())
-                .position(req.position())
+                .fullName(req.fullName() != null ? req.fullName().trim() : null)
+                .phoneNumber(req.phoneNumber() != null ? req.phoneNumber().trim() : null)
+                .position(req.position() != null ? req.position().trim() : null)
                 .profilePictureUrl(req.profilePicture())
                 .build();
 
