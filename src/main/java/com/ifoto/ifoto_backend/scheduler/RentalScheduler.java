@@ -33,6 +33,7 @@ public class RentalScheduler {
     public void runOnStartup() {
         markActiveRentals();
         markOverdueRentals();
+        sendReturnReminders();
         markActiveEventRequests();
     }
 
@@ -56,11 +57,17 @@ public class RentalScheduler {
     }
 
     @Scheduled(cron = "0 0 0 * * *")
+    public void sendReturnReminders() {
+        rentalService.sendReturnReminders();
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void markActiveEventRequests() {
         List<EventEquipmentRequest> active = eventRequestRepository
-                .findByStatusAndStartDatetimeLessThanEqual(
-                        EventEquipmentRequestStatus.APPROVED, LocalDateTime.now());
+                .findByStatusInAndStartDatetimeLessThanEqual(
+                        List.of(EventEquipmentRequestStatus.APPROVED, EventEquipmentRequestStatus.PICKED_UP),
+                        LocalDateTime.now());
         if (active.isEmpty()) return;
         active.forEach(r -> {
             r.setStatus(EventEquipmentRequestStatus.ACTIVE);

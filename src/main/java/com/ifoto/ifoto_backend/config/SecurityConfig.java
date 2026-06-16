@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/my")
                         .hasAnyRole("HIGH_COMMITTEE", "EVENT_COMMITTEE")
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/committee/**")
-                        .hasAnyRole("HIGH_COMMITTEE", "EVENT_COMMITTEE")
+                        .hasAnyRole("ADMIN", "HIGH_COMMITTEE", "EVENT_COMMITTEE")
                         .requestMatchers("/api/v1/events/**").hasRole("HIGH_COMMITTEE")
                         // Rental endpoints
                         .requestMatchers(HttpMethod.POST, "/api/v1/rentals/trigger-active")

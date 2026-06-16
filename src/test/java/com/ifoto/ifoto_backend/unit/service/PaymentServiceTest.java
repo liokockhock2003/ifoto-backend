@@ -42,11 +42,13 @@ class PaymentServiceTest {
     @InjectMocks private PaymentService service;
 
     private User renter;
+    private User approver;
     private Receipt stubReceipt;
 
     @BeforeEach
     void setUp() {
         renter = User.builder().id(1L).email("renter@test.com").username("renter").build();
+        approver = User.builder().id(2L).email("approver@test.com").username("approver").build();
         stubReceipt = new Receipt();
         stubReceipt.setReceiptNumber("RC1110001");
     }
@@ -69,6 +71,7 @@ class PaymentServiceTest {
                 .id(10L)
                 .rentalNumber("ER-2026-000001")
                 .renter(renter)
+                .reviewedBy(approver)
                 .status(status)
                 .totalPenaltyAmount(penalty)
                 .programStartDate(programStart)
@@ -149,6 +152,10 @@ class PaymentServiceTest {
 
         assertEquals(RentalStatus.RETURNED, rental.getStatus());
         assertEquals(RentalPaymentStatus.PENALTY_PAID, rental.getPaymentStatus());
+        verify(mailService).sendOverduePaymentConfirmedToRenter(
+                eq("renter@test.com"), eq("ER-2026-000001"), eq("RC1110001"));
+        verify(mailService).sendOverduePaymentConfirmedToCommittee(
+                eq("approver@test.com"), eq("ER-2026-000001"), anyString(), eq("RC1110001"));
     }
 
     @Test
@@ -164,6 +171,8 @@ class PaymentServiceTest {
 
         verify(mailService).sendPaymentConfirmedToRenter(
                 eq("renter@test.com"), eq("ER-2026-000001"), eq("RC1110001"));
+        verify(mailService).sendPaymentConfirmedToCommittee(
+                eq("approver@test.com"), eq("ER-2026-000001"), anyString(), eq("RC1110001"));
     }
 
     @Test
@@ -253,6 +262,10 @@ class PaymentServiceTest {
 
         assertEquals(RentalStatus.RETURNED, rental.getStatus());
         assertEquals(RentalPaymentStatus.PENALTY_PAID, rental.getPaymentStatus());
+        verify(mailService).sendOverduePaymentConfirmedToRenter(
+                eq("renter@test.com"), anyString(), eq("RC1110001"));
+        verify(mailService).sendOverduePaymentConfirmedToCommittee(
+                eq("approver@test.com"), anyString(), anyString(), eq("RC1110001"));
     }
 
     @Test
@@ -287,5 +300,7 @@ class PaymentServiceTest {
 
         verify(mailService).sendPaymentConfirmedToRenter(
                 eq("renter@test.com"), anyString(), eq("RC1110001"));
+        verify(mailService).sendPaymentConfirmedToCommittee(
+                eq("approver@test.com"), anyString(), anyString(), eq("RC1110001"));
     }
 }

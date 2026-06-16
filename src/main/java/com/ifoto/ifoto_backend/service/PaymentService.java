@@ -78,8 +78,7 @@ public class PaymentService {
             Receipt receipt = isPenalty
                     ? receiptService.createOverdueReceipt(rental, payment)
                     : receiptService.createReceipt(rental, payment);
-            mailService.sendPaymentConfirmedToRenter(
-                    rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
+            notifyPaymentConfirmed(rental, receipt, isPenalty);
 
         } else if ("false".equals(params.get("paid"))) {
             log.warn("Payment {} marked FAILED, state={}", payment.getId(), params.get("state"));
@@ -145,8 +144,31 @@ public class PaymentService {
         Receipt receipt = isPenalty
                 ? receiptService.createOverdueReceipt(rental, payment)
                 : receiptService.createReceipt(rental, payment);
-        mailService.sendPaymentConfirmedToRenter(
-                rental.getRenter().getEmail(), rental.getRentalNumber(), receipt.getReceiptNumber());
+        notifyPaymentConfirmed(rental, receipt, isPenalty);
+    }
+
+    private void notifyPaymentConfirmed(EquipmentRental rental, Receipt receipt, boolean isPenalty) {
+        String renterEmail = rental.getRenter().getEmail();
+        String rentalNumber = rental.getRentalNumber();
+        String receiptNumber = receipt.getReceiptNumber();
+        String renterName = rental.getRenter().getFullName() != null
+                ? rental.getRenter().getFullName() : rental.getRenter().getUsername();
+        User approver = rental.getReviewedBy();
+        boolean notifyApprover = approver != null && approver.getEmail() != null;
+
+        if (isPenalty) {
+            mailService.sendOverduePaymentConfirmedToRenter(renterEmail, rentalNumber, receiptNumber);
+            if (notifyApprover) {
+                mailService.sendOverduePaymentConfirmedToCommittee(
+                        approver.getEmail(), rentalNumber, renterName, receiptNumber);
+            }
+        } else {
+            mailService.sendPaymentConfirmedToRenter(renterEmail, rentalNumber, receiptNumber);
+            if (notifyApprover) {
+                mailService.sendPaymentConfirmedToCommittee(
+                        approver.getEmail(), rentalNumber, renterName, receiptNumber);
+            }
+        }
     }
 
     @Transactional(readOnly = true)

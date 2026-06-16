@@ -7,6 +7,7 @@ import com.ifoto.ifoto_backend.model.enumerator.EventEquipmentRequestStatus;
 import com.ifoto.ifoto_backend.model.enumerator.MainEquipmentStatusType;
 import com.ifoto.ifoto_backend.repository.*;
 import com.ifoto.ifoto_backend.service.EventEquipmentRequestService;
+import com.ifoto.ifoto_backend.service.MailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,7 @@ class EventEquipmentRequestServiceTest {
     @Mock private MainEquipmentStatusRepository mainEquipmentStatusRepository;
     @Mock private SubEquipmentQuantityHoldRepository subEquipmentQuantityHoldRepository;
     @Mock private EquipmentRentalItemRepository rentalItemRepository;
+    @Mock private MailService mailService;
 
     @InjectMocks private EventEquipmentRequestService service;
 
@@ -59,7 +61,7 @@ class EventEquipmentRequestServiceTest {
         start = LocalDateTime.now().plusDays(5);
         end = LocalDateTime.now().plusDays(7);
 
-        requester = User.builder().id(1L).username("alice").build();
+        requester = User.builder().id(1L).username("alice").email("alice@test.com").build();
         committeeUser = User.builder().id(2L).username("comm").build();
         equipment = MainEquipment.builder().mainEquipmentId(100L).brand("Canon").model("R5").build();
         event = Event.builder().eventId(10L).startDatetime(start).endDatetime(end)
@@ -177,7 +179,7 @@ class EventEquipmentRequestServiceTest {
     @Test
     void reviewRequest_actionReject_setsRejectedWithReason() {
         EventEquipmentRequest request = EventEquipmentRequest.builder()
-                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).build();
+                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).requestedBy(requester).build();
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -193,7 +195,7 @@ class EventEquipmentRequestServiceTest {
     @Test
     void reviewRequest_actionRejectLowercase_setsRejected() {
         EventEquipmentRequest request = EventEquipmentRequest.builder()
-                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).build();
+                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).requestedBy(requester).build();
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
         when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -207,7 +209,7 @@ class EventEquipmentRequestServiceTest {
     @Test
     void reviewRequest_invalidAction_throwsBadRequest() {
         EventEquipmentRequest request = EventEquipmentRequest.builder()
-                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).build();
+                .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW).requestedBy(requester).build();
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
 
@@ -220,6 +222,7 @@ class EventEquipmentRequestServiceTest {
     void reviewRequest_actionApprove_setsApprovedStatus() {
         EventEquipmentRequest request = EventEquipmentRequest.builder()
                 .id(1L).status(EventEquipmentRequestStatus.PENDING_REVIEW)
+                .requestedBy(requester)
                 .event(event).items(new ArrayList<>()).subItems(new ArrayList<>()).build();
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
@@ -253,6 +256,22 @@ class EventEquipmentRequestServiceTest {
     }
 
     @Test
+    void markPickedUp_statusActive_keepsActiveAndSetsPickedUpAt() {
+        // Scheduler activated the request before committee marked pickup; should still be allowed
+        EventEquipmentRequest request = requestWithStatus(EventEquipmentRequestStatus.ACTIVE);
+        request.setReviewedBy(null);
+
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
+        when(userRepository.findByUsername("comm")).thenReturn(Optional.of(committeeUser));
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventEquipmentRequest result = service.markPickedUp(1L, "comm");
+
+        assertEquals(EventEquipmentRequestStatus.ACTIVE, result.getStatus());
+        assertNotNull(result.getPickedUpAt());
+    }
+
+    @Test
     void markPickedUp_nonApproverWhenApproverStillActive_throwsForbidden() {
         User activeApprover = equipmentCommitteeUser(10L, "approver");
         User otherComm = User.builder().id(2L).username("other").build();
@@ -283,9 +302,9 @@ class EventEquipmentRequestServiceTest {
     }
 
     @Test
-    void markPickedUp_statusActive_noReviewer_setsPickedUpAt() {
+    void markPickedUp_statusApproved_noReviewer_setsPickedUpAtAndStatus() {
         // reviewer=null → approverStillActive=false → fallback passes for any caller
-        EventEquipmentRequest request = requestWithStatus(EventEquipmentRequestStatus.ACTIVE);
+        EventEquipmentRequest request = requestWithStatus(EventEquipmentRequestStatus.APPROVED);
         request.setReviewedBy(null);
 
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
@@ -294,6 +313,7 @@ class EventEquipmentRequestServiceTest {
 
         EventEquipmentRequest result = service.markPickedUp(1L, "comm");
 
+        assertEquals(EventEquipmentRequestStatus.PICKED_UP, result.getStatus());
         assertNotNull(result.getPickedUpAt());
     }
 
@@ -725,6 +745,7 @@ class EventEquipmentRequestServiceTest {
     private EventEquipmentRequest requestWithStatus(EventEquipmentRequestStatus status) {
         return EventEquipmentRequest.builder()
                 .id(1L).status(status)
+                .requestedBy(requester)
                 .startDatetime(start).endDatetime(end)
                 .items(new ArrayList<>()).subItems(new ArrayList<>())
                 .build();
