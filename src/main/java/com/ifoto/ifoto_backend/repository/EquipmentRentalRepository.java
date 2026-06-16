@@ -77,6 +77,9 @@ public interface EquipmentRentalRepository extends JpaRepository<EquipmentRental
 
     List<EquipmentRental> findByStatusAndReturnDatetimeBefore(RentalStatus status, LocalDateTime dateTime);
 
+    List<EquipmentRental> findByStatusAndReturnDatetimeBetween(RentalStatus status,
+            LocalDateTime start, LocalDateTime end);
+
     List<EquipmentRental> findByStatusAndProgramStartDateLessThanEqual(RentalStatus status, LocalDate date);
 
     List<EquipmentRental> findByStatus(RentalStatus status);

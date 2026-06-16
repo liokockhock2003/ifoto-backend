@@ -66,7 +66,7 @@ public class ReceiptController {
                         .name("receipt-ready")
                         .id(type.name())
                         .data("{\"documentType\":\"%s\",\"receiptNumber\":\"%s\",\"rentalId\":%d}"
-                                .formatted(type.name(), type.prefix() + r.getReceiptNumber(), rentalId)));
+                                .formatted(type.name(), r.getReceiptNumber(), rentalId)));
             } catch (IOException e) {
                 // emitter already gone; ignore
             }
@@ -83,7 +83,7 @@ public class ReceiptController {
                 ? new InvoiceResponse.CommitteeInfo(reviewer.getBankName(), reviewer.getAccountNo(), reviewer.getFullName(), reviewer.getSignature())
                 : null;
         return new InvoiceResponse(
-                r.getDocumentType().prefix() + r.getReceiptNumber(),
+                r.getReceiptNumber(),
                 r.getDocumentType().name(),
                 r.getIssuedAt(),
                 new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
@@ -111,7 +111,7 @@ public class ReceiptController {
                 ? new ReceiptResponse.CommitteeInfo(reviewer.getFullName(), reviewer.getSignature())
                 : null;
         return new ReceiptResponse(
-                r.getDocumentType().prefix() + r.getReceiptNumber(),
+                r.getReceiptNumber(),
                 r.getIssuedAt(),
                 new ReceiptResponse.RenterInfo(user.getUsername(), user.getFullName(), user.getEmail(), user.getPhoneNumber()),
                 new ReceiptResponse.RentalInfo(

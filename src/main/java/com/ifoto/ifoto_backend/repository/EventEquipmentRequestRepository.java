@@ -39,6 +39,9 @@ public interface EventEquipmentRequestRepository extends JpaRepository<EventEqui
     List<EventEquipmentRequest> findByStatusAndStartDatetimeLessThanEqual(
             EventEquipmentRequestStatus status, LocalDateTime datetime);
 
+    List<EventEquipmentRequest> findByStatusInAndStartDatetimeLessThanEqual(
+            List<EventEquipmentRequestStatus> statuses, LocalDateTime datetime);
+
     @Query("""
             SELECT DISTINCT r FROM EventEquipmentRequest r
             JOIN r.items i

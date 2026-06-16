@@ -143,7 +143,7 @@ CREATE TABLE event_equipment_requests (
     event_id             BIGINT   NOT NULL,
     requested_by         BIGINT   NOT NULL,
     reviewed_by          BIGINT,
-    status               ENUM('PENDING_REVIEW','APPROVED','REJECTED','CANCELLED','ACTIVE','RETURNED')
+    status               ENUM('PENDING_REVIEW','APPROVED','PICKED_UP','REJECTED','CANCELLED','ACTIVE','RETURNED')
                          NOT NULL,
     start_datetime       DATETIME NOT NULL,
     end_datetime         DATETIME NOT NULL,

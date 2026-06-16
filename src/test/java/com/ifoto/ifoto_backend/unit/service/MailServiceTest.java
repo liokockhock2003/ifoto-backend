@@ -38,6 +38,7 @@ class MailServiceTest {
         ReflectionTestUtils.setField(service, "from", "noreply@ifoto.com");
         ReflectionTestUtils.setField(service, "appName", "iFoto");
         ReflectionTestUtils.setField(service, "devOverrideRecipient", "");
+        ReflectionTestUtils.setField(service, "loginUrl", "http://localhost:5173/login");
         mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
     }
@@ -142,7 +143,8 @@ class MailServiceTest {
     @Test
     void sendEquipmentUpdatedToRenter_sendsOnce_withCorrectSubject() throws Exception {
         service.sendEquipmentUpdatedToRenter(
-                "renter@test.com", "RNT-2026-000001", List.of("Canon R5", "Godox Flash"));
+                "renter@test.com", "RNT-2026-000001",
+                List.of(new String[] { "Canon R5", "SN123" }, new String[] { "Speedlight", "x2" }));
 
         MimeMessage sent = captureSent();
         assertTrue(sent.getSubject().contains("Equipment Updated"));
@@ -179,6 +181,46 @@ class MailServiceTest {
 
         MimeMessage sent = captureSent();
         assertTrue(sent.getSubject().contains("Payment Confirmed"));
+        assertTrue(sent.getSubject().contains("RNT-2026-000001"));
+    }
+
+    @Test
+    void sendPaymentConfirmedToCommittee_sendsOnce_withCorrectSubject() throws Exception {
+        service.sendPaymentConfirmedToCommittee(
+                "comm@test.com", "RNT-2026-000001", "Alice", "RCP-2026-000001");
+
+        MimeMessage sent = captureSent();
+        assertTrue(sent.getSubject().contains("Payment Received"));
+        assertTrue(sent.getSubject().contains("RNT-2026-000001"));
+    }
+
+    @Test
+    void sendOverduePaymentConfirmedToRenter_sendsOnce_withCorrectSubject() throws Exception {
+        service.sendOverduePaymentConfirmedToRenter(
+                "renter@test.com", "RNT-2026-000001", "RCP-2026-000001");
+
+        MimeMessage sent = captureSent();
+        assertTrue(sent.getSubject().contains("Overdue Penalty Paid"));
+        assertTrue(sent.getSubject().contains("RNT-2026-000001"));
+    }
+
+    @Test
+    void sendOverduePaymentConfirmedToCommittee_sendsOnce_withCorrectSubject() throws Exception {
+        service.sendOverduePaymentConfirmedToCommittee(
+                "comm@test.com", "RNT-2026-000001", "Alice", "RCP-2026-000001");
+
+        MimeMessage sent = captureSent();
+        assertTrue(sent.getSubject().contains("Overdue Penalty Paid"));
+        assertTrue(sent.getSubject().contains("RNT-2026-000001"));
+    }
+
+    @Test
+    void sendRentalOverdueToCommittee_sendsOnce_withCorrectSubject() throws Exception {
+        service.sendRentalOverdueToCommittee(
+                "comm@test.com", "RNT-2026-000001", "Alice", LocalDateTime.now(), 1500L);
+
+        MimeMessage sent = captureSent();
+        assertTrue(sent.getSubject().contains("Rental Overdue"));
         assertTrue(sent.getSubject().contains("RNT-2026-000001"));
     }
 

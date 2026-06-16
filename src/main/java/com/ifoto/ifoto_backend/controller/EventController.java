@@ -35,6 +35,11 @@ public class EventController {
         return ResponseEntity.ok(eventService.getEventsByCommitteeMember(me.getId()));
     }
 
+    @GetMapping("/committee/{userId}")
+    public ResponseEntity<List<EventResponse>> getEventsByCommitteeMember(@PathVariable Long userId) {
+        return ResponseEntity.ok(eventService.getEventsByCommitteeMember(userId));
+    }
+
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody EventRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(request));

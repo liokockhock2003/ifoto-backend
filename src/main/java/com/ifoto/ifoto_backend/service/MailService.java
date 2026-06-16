@@ -32,6 +32,9 @@ public class MailService {
     @Value("${app.mail.dev-override-recipient:}")
     private String devOverrideRecipient;
 
+    @Value("${app.frontend.login-url:http://localhost:5173/login}")
+    private String loginUrl;
+
     // ── KFK brand palette (from index.css) ───────────────────────────────────
     private static final String C_BRAND = "#680202"; // --brand
     private static final String C_HEADER_BG = "#4a0101"; // darker brand red for email header
@@ -98,7 +101,8 @@ public class MailService {
                 + "<p style='margin:24px 0 8px;color:" + C_FOREGROUND
                 + ";font-size:14px;font-weight:600;'>Equipment Requested</p>"
                 + infoTable(equipmentTable)
-                + p("Please log in to the system to review and approve or reject this request.");
+                + p("Please log in to the system to review and approve or reject this request.")
+                + loginButton();
         sendToMany(committeeEmails, appName + " – New Rental Request " + rentalNumber,
                 wrap("New Rental Request", body));
     }
@@ -116,7 +120,8 @@ public class MailService {
                         { "Return By",     fmt(returnDatetime) },
                         { "Total Amount",  "RM " + String.format("%.2f", totalAmountCents / 100.0) }
                 })
-                + p("Your equipment will be ready for pickup on the scheduled date. Payment can be made once the committee confirms your pickup. Please log in to your account to view your invoice.");
+                + p("Your equipment will be ready for pickup on the scheduled date. Payment can be made once the committee confirms your pickup. Please log in to your account to view your invoice.")
+                + loginButton();
         send(renterEmail, appName + " – Rental Approved: " + rentalNumber, wrap("Rental Approved", body));
     }
 
@@ -129,7 +134,8 @@ public class MailService {
                         { "Rental Number", rentalNumber },
                         { "Pickup Time", fmt(pickedUpAt) }
                 })
-                + p("Your equipment has been handed over. Please log in to the system to complete your payment.");
+                + p("Your equipment has been handed over. Please log in to the system to complete your payment.")
+                + loginButton();
         send(renterEmail, appName + " – Equipment Picked Up: " + rentalNumber, wrap("Equipment Picked Up", body));
     }
 
@@ -149,19 +155,15 @@ public class MailService {
 
     @Async
     public void sendEquipmentUpdatedToRenter(String renterEmail, String rentalNumber,
-            List<String> equipmentNames) {
-        StringBuilder equipmentRows = new StringBuilder();
-        for (String eq : equipmentNames) {
-            equipmentRows.append("<li style='padding:4px 0;color:").append(C_TEXT)
-                    .append(";font-size:14px;'>").append(esc(eq)).append("</li>");
-        }
+            List<String[]> equipmentRows) {
         String body = badge("Equipment Updated", C_BADGE_INFO_BG, C_BADGE_INFO_FG)
                 + h2("Your Rental Equipment Has Been Updated")
                 + infoTable(new String[][] { { "Rental Number", rentalNumber } })
                 + "<p style='margin:24px 0 8px;color:" + C_FOREGROUND
                 + ";font-size:14px;font-weight:600;'>Updated Equipment</p>"
-                + "<ul style='margin:0;padding-left:20px;'>" + equipmentRows + "</ul>"
-                + p("Please log in to view your updated invoice.");
+                + infoTable(equipmentRows.toArray(new String[0][]))
+                + p("Please log in to view your updated invoice.")
+                + loginButton();
         send(renterEmail, appName + " – Equipment Updated: " + rentalNumber, wrap("Equipment Updated", body));
     }
 
@@ -185,8 +187,52 @@ public class MailService {
                         { "Rental Number", rentalNumber },
                         { "Receipt Number", receiptNumber }
                 })
-                + p("Thank you for your payment. Please collect your equipment on the approved start date.");
+                + p("Thank you for your payment. Your rental is now confirmed and your equipment is yours for the rental period — please remember to return it on time.")
+                + loginButton();
         send(renterEmail, appName + " – Payment Confirmed: " + rentalNumber, wrap("Payment Confirmed", body));
+    }
+
+    @Async
+    public void sendPaymentConfirmedToCommittee(String committeeEmail, String rentalNumber,
+            String renterName, String receiptNumber) {
+        String body = badge("Payment Confirmed", C_BADGE_INFO_BG, C_BADGE_INFO_FG)
+                + h2("Rental Payment Received")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Renter", renterName },
+                        { "Receipt Number", receiptNumber }
+                })
+                + p("Payment has been received for a rental you approved. No further action is needed.")
+                + loginButton();
+        send(committeeEmail, appName + " – Payment Received: " + rentalNumber, wrap("Payment Received", body));
+    }
+
+    @Async
+    public void sendOverduePaymentConfirmedToRenter(String renterEmail, String rentalNumber, String receiptNumber) {
+        String body = badge("Penalty Paid", C_BADGE_SUCCESS_BG, C_BADGE_SUCCESS_FG)
+                + h2("Overdue Penalty Settled")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Receipt Number", receiptNumber }
+                })
+                + p("Thank you for settling the overdue penalty. This rental is now fully closed. We hope to see you again soon!")
+                + loginButton();
+        send(renterEmail, appName + " – Overdue Penalty Paid: " + rentalNumber, wrap("Overdue Penalty Paid", body));
+    }
+
+    @Async
+    public void sendOverduePaymentConfirmedToCommittee(String committeeEmail, String rentalNumber,
+            String renterName, String receiptNumber) {
+        String body = badge("Penalty Paid", C_BADGE_INFO_BG, C_BADGE_INFO_FG)
+                + h2("Overdue Penalty Settled")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Renter", renterName },
+                        { "Receipt Number", receiptNumber }
+                })
+                + p("The overdue penalty has been paid for a rental you approved. This rental is now fully closed.")
+                + loginButton();
+        send(committeeEmail, appName + " – Overdue Penalty Paid: " + rentalNumber, wrap("Overdue Penalty Paid", body));
     }
 
     @Async
@@ -202,6 +248,205 @@ public class MailService {
                 + p("The renter has selected cash payment. Please confirm receipt of payment in the system once collected.");
         sendToMany(committeeEmails, appName + " – Cash Payment Pending: " + rentalNumber,
                 wrap("Cash Payment Pending", body));
+    }
+
+    @Async
+    public void sendRentalCancelledToRenter(String renterEmail, String rentalNumber) {
+        String body = badge("Cancelled", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("Your Rental Has Been Cancelled")
+                + infoTable(new String[][] { { "Rental Number", rentalNumber } })
+                + p("Your rental request has been cancelled and the reserved equipment has been released. "
+                        + "If this was a mistake, you are welcome to submit a new request.");
+        send(renterEmail, appName + " – Rental Cancelled: " + rentalNumber, wrap("Rental Cancelled", body));
+    }
+
+    @Async
+    public void sendRentalCancelledToCommittee(List<String> committeeEmails, String rentalNumber,
+            String renterName) {
+        String body = badge("Cancelled", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("A Rental Has Been Cancelled")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Renter", renterName }
+                })
+                + p("The renter has cancelled this rental. The reserved equipment is now available again.");
+        sendToMany(committeeEmails, appName + " – Rental Cancelled: " + rentalNumber,
+                wrap("Rental Cancelled", body));
+    }
+
+    @Async
+    public void sendRentalReturnReminderToRenter(String renterEmail, String rentalNumber,
+            LocalDateTime returnDatetime) {
+        String body = badge("Return Reminder", C_BADGE_INFO_BG, C_BADGE_INFO_FG)
+                + h2("Friendly Reminder: Equipment Due Today")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Return By", fmt(returnDatetime) }
+                })
+                + p("This is a gentle reminder that your rented equipment is due back today. "
+                        + "Please return it on time to avoid late penalty charges.");
+        send(renterEmail, appName + " – Return Reminder: " + rentalNumber, wrap("Return Reminder", body));
+    }
+
+    @Async
+    public void sendRentalOverdueToRenter(String renterEmail, String rentalNumber,
+            LocalDateTime returnDatetime, Long penaltyAmountCents) {
+        String body = badge("Overdue", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("Action Required: Your Rental Is Overdue")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Was Due", fmt(returnDatetime) },
+                        { "Penalty So Far", "RM " + String.format("%.2f", (penaltyAmountCents != null
+                                ? penaltyAmountCents : 0L) / 100.0) }
+                })
+                + p("Your rented equipment is past its return date. A late penalty is accruing daily and "
+                        + "will continue to grow until the equipment is returned. Please return it as soon as possible "
+                        + "and settle the outstanding penalty.")
+                + loginButton();
+        send(renterEmail, appName + " – Rental Overdue: " + rentalNumber, wrap("Rental Overdue", body));
+    }
+
+    @Async
+    public void sendRentalOverdueToCommittee(String committeeEmail, String rentalNumber,
+            String renterName, LocalDateTime returnDatetime, Long penaltyAmountCents) {
+        String body = badge("Overdue", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("A Rental You Approved Is Overdue")
+                + infoTable(new String[][] {
+                        { "Rental Number", rentalNumber },
+                        { "Renter", renterName },
+                        { "Was Due", fmt(returnDatetime) },
+                        { "Penalty So Far", "RM " + String.format("%.2f", (penaltyAmountCents != null
+                                ? penaltyAmountCents : 0L) / 100.0) }
+                })
+                + p("A rental you approved is past its return date and is accruing a daily late penalty. "
+                        + "You may wish to follow up with the renter to arrange the return.")
+                + loginButton();
+        send(committeeEmail, appName + " – Rental Overdue: " + rentalNumber, wrap("Rental Overdue", body));
+    }
+
+    @Async
+    public void sendRentalReturnedToRenter(String renterEmail, String rentalNumber,
+            LocalDateTime returnedAt, Long penaltyAmountCents) {
+        boolean hasPenalty = penaltyAmountCents != null && penaltyAmountCents > 0;
+        String body = badge("Returned", C_BADGE_SUCCESS_BG, C_BADGE_SUCCESS_FG)
+                + h2("Equipment Return Confirmed")
+                + infoTable(hasPenalty
+                        ? new String[][] {
+                                { "Rental Number", rentalNumber },
+                                { "Returned At", fmt(returnedAt) },
+                                { "Outstanding Penalty", "RM " + String.format("%.2f", penaltyAmountCents / 100.0) }
+                        }
+                        : new String[][] {
+                                { "Rental Number", rentalNumber },
+                                { "Returned At", fmt(returnedAt) }
+                        })
+                + (hasPenalty
+                        ? p("Thank you for returning the equipment. Because the return was late, an overdue penalty "
+                                + "applies. Please log in to settle the outstanding penalty at your earliest convenience.")
+                                + loginButton()
+                        : p("Thank you for returning the equipment on time. We hope to see you again soon!"));
+        send(renterEmail, appName + " – Rental Returned: " + rentalNumber, wrap("Rental Returned", body));
+    }
+
+    // ── Event equipment request notifications ─────────────────────────────────
+
+    @Async
+    public void sendEventRequestSubmittedToCommittee(List<String> committeeEmails, String requestNumber,
+            String requesterName, String eventName, List<String[]> mainEquipmentRows,
+            List<String[]> subEquipmentRows, LocalDateTime start, LocalDateTime end) {
+        List<String[]> combined = new java.util.ArrayList<>(mainEquipmentRows);
+        if (subEquipmentRows != null) combined.addAll(subEquipmentRows);
+        String[][] equipmentTable = combined.toArray(new String[0][]);
+        String body = badge("New Request", C_BADGE_INFO_BG, C_BADGE_INFO_FG)
+                + h2("New Event Equipment Request")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Event", eventName },
+                        { "Submitted By", requesterName },
+                        { "Requested Period", fmt(start) + " to " + fmt(end) }
+                })
+                + "<p style='margin:24px 0 8px;color:" + C_FOREGROUND
+                + ";font-size:14px;font-weight:600;'>Equipment Requested</p>"
+                + infoTable(equipmentTable)
+                + p("Please log in to the system to review and approve or reject this request.")
+                + loginButton();
+        sendToMany(committeeEmails, appName + " – New Event Equipment Request " + requestNumber,
+                wrap("New Event Equipment Request", body));
+    }
+
+    @Async
+    public void sendEventRequestApprovedToRequester(String requesterEmail, String requestNumber,
+            String eventName, LocalDateTime pickupDatetime, LocalDateTime returnDatetime) {
+        String body = badge("Approved", C_BADGE_SUCCESS_BG, C_BADGE_SUCCESS_FG)
+                + h2("Your Equipment Request Has Been Approved")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Event", eventName },
+                        { "Pickup By", fmt(pickupDatetime) },
+                        { "Return By", fmt(returnDatetime) }
+                })
+                + p("Your equipment will be ready for collection on the scheduled date. "
+                        + "Please log in to view the full details.")
+                + loginButton();
+        send(requesterEmail, appName + " – Equipment Request Approved: " + requestNumber,
+                wrap("Equipment Request Approved", body));
+    }
+
+    @Async
+    public void sendEventRequestRejectedToRequester(String requesterEmail, String requestNumber, String reason) {
+        String body = badge("Rejected", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("Equipment Request Not Approved")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Reason", reason }
+                })
+                + p("If you have questions or would like to submit a new request, please contact the Equipment Committee.");
+        send(requesterEmail, appName + " – Equipment Request Rejected: " + requestNumber,
+                wrap("Equipment Request Rejected", body));
+    }
+
+    @Async
+    public void sendEventRequestCancelledToCommittee(List<String> committeeEmails, String requestNumber,
+            String requesterName) {
+        String body = badge("Cancelled", C_BADGE_DANGER_BG, C_BADGE_DANGER_FG)
+                + h2("An Equipment Request Has Been Cancelled")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Requested By", requesterName }
+                })
+                + p("The requester has cancelled this event equipment request. "
+                        + "The reserved equipment is now available again.");
+        sendToMany(committeeEmails, appName + " – Equipment Request Cancelled: " + requestNumber,
+                wrap("Equipment Request Cancelled", body));
+    }
+
+    @Async
+    public void sendEventRequestPickedUpToRequester(String requesterEmail, String requestNumber,
+            LocalDateTime pickedUpAt) {
+        String body = badge("Picked Up", C_BADGE_SUCCESS_BG, C_BADGE_SUCCESS_FG)
+                + h2("Equipment Handed Over")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Pickup Time", fmt(pickedUpAt) }
+                })
+                + p("Your requested equipment has been handed over. Please take good care of it and "
+                        + "return it by the agreed date.");
+        send(requesterEmail, appName + " – Equipment Picked Up: " + requestNumber,
+                wrap("Equipment Picked Up", body));
+    }
+
+    @Async
+    public void sendEventRequestReturnedToRequester(String requesterEmail, String requestNumber,
+            LocalDateTime returnedAt) {
+        String body = badge("Returned", C_BADGE_SUCCESS_BG, C_BADGE_SUCCESS_FG)
+                + h2("Equipment Return Confirmed")
+                + infoTable(new String[][] {
+                        { "Request Number", requestNumber },
+                        { "Returned At", fmt(returnedAt) }
+                })
+                + p("Thank you for returning the equipment. We hope your event was a success!");
+        send(requesterEmail, appName + " – Equipment Returned: " + requestNumber,
+                wrap("Equipment Returned", body));
     }
 
     // ── Private send helpers ──────────────────────────────────────────────────
@@ -288,7 +533,7 @@ public class MailService {
                 + "</td></tr>"
 
                 // Body card
-                + "<tr><td style='background-color:" + C_CARD_BG + ";padding:40px 48px;"
+                + "<tr><td style='background-color:" + C_CARD_BG + ";padding:40px 32px;"
                 + "border-radius:0 0 8px 8px;'>"
                 + bodyHtml
                 + "</td></tr>"
@@ -335,6 +580,10 @@ public class MailService {
                 + "color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;"
                 + "letter-spacing:0.3px;'>" + esc(text) + "</a>"
                 + "</td></tr></table>";
+    }
+
+    private String loginButton() {
+        return button("Log In to iFoto", loginUrl, C_BRAND);
     }
 
     private String infoTable(String[][] rows) {
