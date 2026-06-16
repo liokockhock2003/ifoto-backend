@@ -94,6 +94,11 @@
       "name": "app.rental.buffer-minutes",
       "type": "java.lang.String",
       "description": "A description for 'app.rental.buffer-minutes'"
+    },
+    {
+      "name": "app.frontend.login-url",
+      "type": "java.lang.String",
+      "description": "A description for 'app.frontend.login-url'"
     }
   ]
 }

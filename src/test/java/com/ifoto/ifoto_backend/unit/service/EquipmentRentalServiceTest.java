@@ -140,6 +140,26 @@ class EquipmentRentalServiceTest {
         assertEquals(400, ex.getStatusCode().value());
     }
 
+    // ── updateOverduePenalties ────────────────────────────────────────────────
+
+    @Test
+    void updateOverduePenalties_notifiesRenterAndApprovingCommittee() {
+        EquipmentRental rental = rentalWith(RENTAL_ID, RentalStatus.OVERDUE);
+        rental.setReturnDatetime(LocalDateTime.now().minusDays(2));
+        rental.setReviewedBy(userWith(10L, "committee"));
+
+        when(rentalRepository.findByStatusAndReturnDatetimeBefore(eq(RentalStatus.ACTIVE), any()))
+                .thenReturn(List.of());
+        when(rentalRepository.findByStatus(RentalStatus.OVERDUE)).thenReturn(List.of(rental));
+        when(rentalRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.updateOverduePenalties();
+
+        verify(mailService).sendRentalOverdueToRenter(eq("alice@test.com"), any(), any(), any());
+        verify(mailService).sendRentalOverdueToCommittee(
+                eq("committee@test.com"), any(), any(), any(), any());
+    }
+
     // ── cancelRental ─────────────────────────────────────────────────────────
 
     @Test
@@ -967,6 +987,7 @@ class EquipmentRentalServiceTest {
         return EquipmentRental.builder()
                 .id(id)
                 .status(status)
+                .renter(userWith(1L, "alice"))
                 .programStartDate(LocalDate.now())
                 .programEndDate(LocalDate.now().plusDays(3))
                 .items(new ArrayList<>())

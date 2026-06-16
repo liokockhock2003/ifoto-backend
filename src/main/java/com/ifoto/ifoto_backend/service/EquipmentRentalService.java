@@ -123,8 +123,7 @@ public class EquipmentRentalService {
                                         .toList();
                         List<String[]> subEqRows = rental.getSubItems().stream()
                                         .map(s -> new String[] {
-                                                        s.getSubEquipment().getType() + " "
-                                                                        + s.getSubEquipment().getBrand(),
+                                                        subLabel(s.getSubEquipment()),
                                                         "x" + s.getBorrowedQuantity() })
                                         .toList();
                         mailService.sendRentalSubmittedToCommittee(committeeEmails, rental.getRentalNumber(),
@@ -259,8 +258,24 @@ public class EquipmentRentalService {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                         "Only PENDING REVIEW or APPROVED rentals can be cancelled");
                 }
+                boolean wasApproved = rental.getStatus() == RentalStatus.APPROVED;
                 rental.setStatus(RentalStatus.CANCELLED);
-                return rentalRepository.save(rental);
+                rental = rentalRepository.save(rental);
+
+                mailService.sendRentalCancelledToRenter(renter.getEmail(), rental.getRentalNumber());
+
+                List<String> committeeRecipients;
+                if (wasApproved && rental.getReviewedBy() != null) {
+                        committeeRecipients = List.of(rental.getReviewedBy().getEmail());
+                } else {
+                        committeeRecipients = userRepository.findAllByRoleName("ROLE_EQUIPMENT_COMMITTEE")
+                                        .stream().map(User::getEmail).toList();
+                }
+                if (!committeeRecipients.isEmpty()) {
+                        mailService.sendRentalCancelledToCommittee(committeeRecipients, rental.getRentalNumber(),
+                                        renter.getFullName() != null ? renter.getFullName() : renter.getUsername());
+                }
+                return rental;
         }
 
         // ── Committee lifecycle actions ───────────────────────────────────────────
@@ -329,6 +344,8 @@ public class EquipmentRentalService {
                 if (overdueDays > 0) {
                         receiptService.createOverdueInvoice(rental);
                 }
+                mailService.sendRentalReturnedToRenter(rental.getRenter().getEmail(), rental.getRentalNumber(),
+                                rental.getReturnedAt(), rental.getTotalPenaltyAmount());
                 return rental;
         }
 
@@ -402,16 +419,19 @@ public class EquipmentRentalService {
                 receiptService.deleteInvoice(rental.getId());
                 receiptService.createInvoice(rental);
 
-                List<String> eqNames = new ArrayList<>();
+                List<String[]> eqRows = new ArrayList<>();
                 equipmentList.stream()
-                                .map(e -> e.getBrand() + " " + e.getModel() + " (" + e.getSerialNumber() + ")")
-                                .forEach(eqNames::add);
+                                .map(e -> new String[] {
+                                                e.getBrand() + " " + e.getModel(),
+                                                e.getSerialNumber() != null ? e.getSerialNumber() : "—" })
+                                .forEach(eqRows::add);
                 rental.getSubItems().stream()
-                                .map(s -> s.getSubEquipment().getType() + " " + s.getSubEquipment().getBrand()
-                                                + " x" + s.getBorrowedQuantity())
-                                .forEach(eqNames::add);
+                                .map(s -> new String[] {
+                                                subLabel(s.getSubEquipment()),
+                                                "x" + s.getBorrowedQuantity() })
+                                .forEach(eqRows::add);
                 mailService.sendEquipmentUpdatedToRenter(rental.getRenter().getEmail(),
-                                rental.getRentalNumber(), eqNames);
+                                rental.getRentalNumber(), eqRows);
                 return rental;
         }
 
@@ -480,8 +500,34 @@ public class EquipmentRentalService {
                 }
                 rentalRepository.saveAll(alreadyOverdue);
 
+                // Notify each overdue renter (and the approving committee) daily with the
+                // current (growing) penalty total.
+                for (EquipmentRental r : alreadyOverdue) {
+                        mailService.sendRentalOverdueToRenter(r.getRenter().getEmail(), r.getRentalNumber(),
+                                        r.getReturnDatetime(), r.getTotalPenaltyAmount());
+                        if (r.getReviewedBy() != null && r.getReviewedBy().getEmail() != null) {
+                                mailService.sendRentalOverdueToCommittee(r.getReviewedBy().getEmail(),
+                                                r.getRentalNumber(), renterName(r), r.getReturnDatetime(),
+                                                r.getTotalPenaltyAmount());
+                        }
+                }
+
                 log.info("Marked {} new OVERDUE, recalculated penalty for {} existing OVERDUE rental(s)",
                                 newlyOverdue.size(), alreadyOverdue.size());
+        }
+
+        // ── Return reminders (called by scheduler) ───────────────────────────────
+
+        @Transactional(readOnly = true)
+        public void sendReturnReminders() {
+                LocalDate today = LocalDate.now();
+                List<EquipmentRental> dueToday = rentalRepository.findByStatusAndReturnDatetimeBetween(
+                                RentalStatus.ACTIVE, today.atStartOfDay(), today.atTime(23, 59, 59));
+                for (EquipmentRental r : dueToday) {
+                        mailService.sendRentalReturnReminderToRenter(r.getRenter().getEmail(),
+                                        r.getRentalNumber(), r.getReturnDatetime());
+                }
+                log.info("Sent {} return reminder(s) for rentals due today", dueToday.size());
         }
 
         // ── Equipment schedules ───────────────────────────────────────────────────
@@ -655,6 +701,16 @@ public class EquipmentRentalService {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                         "Return Date & Time cannot be before Program End Date (" + programEnd + ")");
                 }
+        }
+
+        private static String renterName(EquipmentRental rental) {
+                User renter = rental.getRenter();
+                return renter.getFullName() != null ? renter.getFullName() : renter.getUsername();
+        }
+
+        private static String subLabel(SubEquipment sub) {
+                String brand = sub.getBrand();
+                return (brand != null && !brand.isBlank()) ? sub.getType() + " " + brand : sub.getType();
         }
 
         private void requireApproverOrFallback(EquipmentRental rental, User requester) {

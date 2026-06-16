@@ -37,6 +37,7 @@ public class EventEquipmentRequestService {
     private final MainEquipmentStatusRepository mainEquipmentStatusRepository;
     private final SubEquipmentQuantityHoldRepository subEquipmentQuantityHoldRepository;
     private final EquipmentRentalItemRepository rentalItemRepository;
+    private final MailService mailService;
 
     @Value("${app.rental.buffer-minutes:60}")
     private int bufferMinutes;
@@ -92,6 +93,23 @@ public class EventEquipmentRequestService {
         request = requestRepository.save(request);
 
         buildAndSaveSubItems(request, subEquipmentEntries, startDatetime, endDatetime, 0L);
+
+        List<String> committeeEmails = committeeEmails();
+        if (!committeeEmails.isEmpty()) {
+            List<String[]> mainEqRows = equipmentList.stream()
+                    .map(e -> new String[] {
+                            e.getBrand() + " " + e.getModel(),
+                            e.getSerialNumber() != null ? e.getSerialNumber() : "—" })
+                    .toList();
+            List<String[]> subEqRows = request.getSubItems().stream()
+                    .map(s -> new String[] {
+                            s.getSubEquipment().getType() + " " + s.getSubEquipment().getBrand(),
+                            "x" + s.getBorrowedQuantity() })
+                    .toList();
+            mailService.sendEventRequestSubmittedToCommittee(committeeEmails, request.getRequestNumber(),
+                    requester.getFullName() != null ? requester.getFullName() : requester.getUsername(),
+                    event.getEventName(), mainEqRows, subEqRows, startDatetime, endDatetime);
+        }
         return request;
     }
 
@@ -116,7 +134,10 @@ public class EventEquipmentRequestService {
             request.setReviewedBy(committee);
             request.setRejectionReason(rejectionReason);
             request.setCommitteeNotes(committeeNotes);
-            return requestRepository.save(request);
+            request = requestRepository.save(request);
+            mailService.sendEventRequestRejectedToRequester(request.getRequestedBy().getEmail(),
+                    request.getRequestNumber(), rejectionReason);
+            return request;
         }
 
         if (!"APPROVE".equalsIgnoreCase(action)) {
@@ -162,6 +183,8 @@ public class EventEquipmentRequestService {
                     request.getStartDatetime(), request.getEndDatetime(), id);
         }
 
+        mailService.sendEventRequestApprovedToRequester(request.getRequestedBy().getEmail(),
+                request.getRequestNumber(), event.getEventName(), pickupDt, returnDt);
         return request;
     }
 
@@ -180,8 +203,18 @@ public class EventEquipmentRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Only PENDING_REVIEW or APPROVED requests can be cancelled");
         }
+        boolean wasApproved = request.getStatus() == EventEquipmentRequestStatus.APPROVED;
         request.setStatus(EventEquipmentRequestStatus.CANCELLED);
-        return requestRepository.save(request);
+        request = requestRepository.save(request);
+
+        List<String> committeeRecipients = (wasApproved && request.getReviewedBy() != null)
+                ? List.of(request.getReviewedBy().getEmail())
+                : committeeEmails();
+        if (!committeeRecipients.isEmpty()) {
+            mailService.sendEventRequestCancelledToCommittee(committeeRecipients, request.getRequestNumber(),
+                    requester.getFullName() != null ? requester.getFullName() : requester.getUsername());
+        }
+        return request;
     }
 
     // ── Committee lifecycle ────────────────────────────────────────────────────
@@ -189,14 +222,17 @@ public class EventEquipmentRequestService {
     @Transactional
     public EventEquipmentRequest markPickedUp(Long id, String username) {
         EventEquipmentRequest request = findRequest(id);
-        if (request.getStatus() != EventEquipmentRequestStatus.APPROVED
-                && request.getStatus() != EventEquipmentRequestStatus.ACTIVE) {
+        if (request.getStatus() != EventEquipmentRequestStatus.APPROVED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Request must be APPROVED or ACTIVE to mark as picked up");
+                    "Request must be APPROVED to mark as picked up");
         }
         requireApproverOrFallback(request, findUser(username));
+        request.setStatus(EventEquipmentRequestStatus.PICKED_UP);
         request.setPickedUpAt(LocalDateTime.now());
-        return requestRepository.save(request);
+        request = requestRepository.save(request);
+        mailService.sendEventRequestPickedUpToRequester(request.getRequestedBy().getEmail(),
+                request.getRequestNumber(), request.getPickedUpAt());
+        return request;
     }
 
     @Transactional
@@ -220,7 +256,10 @@ public class EventEquipmentRequestService {
         }
         request.setStatus(EventEquipmentRequestStatus.RETURNED);
         request.setReturnedAt(LocalDateTime.now());
-        return requestRepository.save(request);
+        request = requestRepository.save(request);
+        mailService.sendEventRequestReturnedToRequester(request.getRequestedBy().getEmail(),
+                request.getRequestNumber(), request.getReturnedAt());
+        return request;
     }
 
     // ── Logistics update (pickup/return datetime) ─────────────────────────────
@@ -508,6 +547,11 @@ public class EventEquipmentRequestService {
         }
         subItemRepository.saveAll(subItems);
         request.getSubItems().addAll(subItems);
+    }
+
+    private List<String> committeeEmails() {
+        return userRepository.findAllByRoleName("ROLE_EQUIPMENT_COMMITTEE")
+                .stream().map(User::getEmail).toList();
     }
 
     private User findUser(String username) {
