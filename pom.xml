@@ -53,6 +53,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Actuator: /actuator/health for Railway healthchecks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Lombok (reduces boilerplate) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
