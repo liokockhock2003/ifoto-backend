@@ -57,6 +57,7 @@ The dev profile reads these from the environment (no `.env` file checked in):
 | `APP_PASSWORD_RESET_URL_BASE` | Frontend reset-password URL (default: `http://localhost:5173/reset-password`) |
 | `EMAIL_VERIFY_TOKEN_EXPIRY_MS` | Email verification token TTL in ms (default: `86400000` = 24 h) |
 | `EMAIL_VERIFY_URL_BASE` | Frontend verify-email URL (default: `http://localhost:5173/verify-email`) |
+| `BILLPLZ_ENABLED` | Enable Billplz online payment (default: `false`; when off, `ONLINE` pay requests return 400 and the other `BILLPLZ_*` vars are optional) |
 | `BILLPLZ_API_KEY` | Billplz payment gateway API key |
 | `BILLPLZ_COLLECTION_ID` | Billplz collection ID |
 | `BILLPLZ_X_SIGNATURE_KEY` | Billplz webhook signature verification key |
