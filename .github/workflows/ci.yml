@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Build & test
+  # Job name must stay "build-and-test" — it's a required status check on main
+  build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
