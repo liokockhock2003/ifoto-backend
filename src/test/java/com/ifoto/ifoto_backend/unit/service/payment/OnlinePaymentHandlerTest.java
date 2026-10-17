@@ -8,6 +8,7 @@ import com.ifoto.ifoto_backend.model.enumerator.RentalStatus;
 import com.ifoto.ifoto_backend.repository.PaymentRepository;
 import com.ifoto.ifoto_backend.service.BillplzService;
 import com.ifoto.ifoto_backend.service.payment.OnlinePaymentHandler;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,6 +32,25 @@ class OnlinePaymentHandlerTest {
 
     @InjectMocks
     private OnlinePaymentHandler handler;
+
+    @BeforeEach
+    void enableGateway() {
+        lenient().when(billplzConfig.isEnabled()).thenReturn(true);
+    }
+
+    @Test
+    void initiate_gatewayDisabled_throwsBadRequestWithoutCreatingBill() {
+        when(billplzConfig.isEnabled()).thenReturn(false);
+        EquipmentRental rental = rental(RentalStatus.PICKED_UP, RentalPaymentStatus.NONE, 5000L, 0L);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> handler.initiate(rental, renter()));
+
+        assertEquals(400, ex.getStatusCode().value());
+        assertEquals(RentalStatus.PICKED_UP, rental.getStatus());
+        verify(billplzService, never()).createBill(any(), any(), anyLong());
+        verify(paymentRepository, never()).save(any());
+    }
 
     @Test
     void initiate_penaltyAlreadyPaid_throwsBadRequest() {

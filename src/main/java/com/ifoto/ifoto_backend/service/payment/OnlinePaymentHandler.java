@@ -32,6 +32,11 @@ public class OnlinePaymentHandler implements PaymentMethodHandler {
 
     @Override
     public void initiate(EquipmentRental rental, User renter) {
+        if (!billplzConfig.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Online payment is currently unavailable. Please pay by cash or bank transfer.");
+        }
+
         if (rental.getPaymentStatus() == RentalPaymentStatus.PENALTY_PAID) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Penalty has already been paid");
         }

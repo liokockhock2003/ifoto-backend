@@ -15,6 +15,7 @@ import java.util.Base64;
 @Setter
 public class BillplzConfig {
 
+    private boolean enabled;
     private String apiKey;
     private String collectionId;
     private String xSignatureKey;
